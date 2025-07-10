@@ -1,0 +1,27 @@
+# Python 관련
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+# 가상환경 폴더
+venv_3123/
+# Jupyter 노트북 체크포인트
+.ipynb_checkpoints/
+# 데이터 폴더 (용량 크거나 민감하면 무시)
+data/
+# IDE 및 OS 관련
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+# 로그 파일
+*.log
+# 빌드 폴더 (있다면)
+build/
+dist/
+*.egg-info/
+# 환경변수 파일
+.env
+# 기타
+*.sqlite3
