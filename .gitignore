@@ -10,6 +10,7 @@ venv_3123/
 .ipynb_checkpoints/
 # 데이터 폴더 (용량 크거나 민감하면 무시)
 data/
+nonogs/
 # IDE 및 OS 관련
 .vscode/
 .idea/
