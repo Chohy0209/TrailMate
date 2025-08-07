@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>멀티턴 챗봇 + 지도</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+</head>
+<body>
+    <h2>계획 수립 챗봇</h2>
+    <div id="chat-box" style="border:1px solid #aaa; padding:10px; height:300px; overflow-y:scroll;"></div>
+    <textarea id="user-input" rows="3" style="width:100%;"></textarea>
+    <button onclick="sendMessage()">전송</button>
+
+    <h3>지도</h3>
+    <div id="map" style="height:400px;"></div>
+
+    <script>
+        let history = [];
+        let userLocation;
+
+        // Leaflet 지도 초기화
+        const map = L.map('map').setView([37.5665, 126.9780], 12); // 기본 위치: 서울
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let routingControl;
+
+        // 현재 위치 가져오기
+        navigator.geolocation.getCurrentPosition(function(position) {
+            userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            map.setView([userLocation.lat, userLocation.lng], 13);
+            L.marker([userLocation.lat, userLocation.lng]).addTo(map)
+                .bindPopup('현재 위치').openPopup();
+        }, function() {
+            // 위치 정보 가져오기 실패 시
+            alert('현재 위치를 가져올 수 없습니다.');
+        });
+
+        function sendMessage() {
+            const message = document.getElementById("user-input").value;
+            if (!message.trim()) return;
+
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += `<div><strong>나:</strong> ${message}</div>`;
+
+            fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const botReply = data.answer; // data.response -> data.answer
+                chatBox.innerHTML += `<div><strong>봇:</strong> ${botReply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                // history.push(message, botReply); // history는 이제 백엔드에서 관리하지 않으므로 제거
+                document.getElementById("user-input").value = "";
+
+                // 기존 마커 및 경로 제거
+                map.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
+
+                // 위치 정보가 있으면 지도에 표시
+                if (data.locations && data.locations.length > 0 && userLocation) {
+                    const waypoints = [L.latLng(userLocation.lat, userLocation.lng)];
+                    data.locations.forEach(location => {
+                        const { name, lat, lon } = location; // latitude, longitude -> lat, lon
+                        L.marker([lat, lon]).addTo(map).bindPopup(name).openPopup();
+                        waypoints.push(L.latLng(lat, lon));
+                    });
+
+                    if (waypoints.length > 1) {
+                        routingControl = L.Routing.control({
+                            waypoints: waypoints,
+                            routeWhileDragging: true,
+                            geocoder: L.Control.Geocoder.nominatim(),
+                            language: 'ko'
+                        }).addTo(map);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
