@@ -2,53 +2,112 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>멀티턴 챗봇 + 지도</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <title>캠토리(Camptory)</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=NgavYPP2ip4Ixo0fWPwEi8WeMz6zosnX56JGpGml"></script>
 </head>
 <body>
-    <h2>계획 수립 챗봇</h2>
-    <div id="chat-box" style="border:1px solid #aaa; padding:10px; height:300px; overflow-y:scroll;"></div>
-    <textarea id="user-input" rows="3" style="width:100%;"></textarea>
-    <button onclick="sendMessage()">전송</button>
-
-    <h3>지도</h3>
-    <div id="map" style="height:400px;"></div>
+    <div class="container">
+        <div class="chat-container">
+            <h2>지금 나만의 캠핑</h2>
+            <div id="chat-box"></div>
+            <textarea id="user-input" rows="3" placeholder="궁금한 캠핑 정보를 물어보세요!"></textarea>
+            <button onclick="sendMessage()">전송</button>
+        </div>
+        <div class="map-container">
+            <div id="map_div"></div>
+            <div id="route-list-container">
+                <ul id="route-list"></ul>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let history = [];
         let userLocation;
+        let map;
+        let markers = [];
+        let polylines = [];
+        let recommendedLocations = []; // 추천 장소 목록 저장
 
-        // Leaflet 지도 초기화
-        const map = L.map('map').setView([37.5665, 126.9780], 12); // 기본 위치: 서울
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        function initTmap() {
+            map = new Tmapv2.Map("map_div", {
+                center: new Tmapv2.LatLng(37.5665, 126.9780),
+                width: "100%",
+                height: "100%",
+                zoom: 12
+            });
 
-        let routingControl;
+            navigator.geolocation.getCurrentPosition(position => {
+                userLocation = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
+                new Tmapv2.Marker({
+                    position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
+                    map: map,
+                    icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                    title: '현재 위치'
+                });
+            }, () => {
+                alert('현재 위치를 가져올 수 없습니다.');
+            });
+        }
 
-        // 현재 위치 가져오기
-        navigator.geolocation.getCurrentPosition(function(position) {
-            userLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            };
-            map.setView([userLocation.lat, userLocation.lng], 13);
-            L.marker([userLocation.lat, userLocation.lng]).addTo(map)
-                .bindPopup('현재 위치').openPopup();
-        }, function() {
-            // 위치 정보 가져오기 실패 시
-            alert('현재 위치를 가져올 수 없습니다.');
-        });
+        function clearMap() {
+            markers.forEach(marker => marker.setMap(null));
+            polylines.forEach(polyline => polyline.setMap(null));
+            markers = [];
+            polylines = [];
+        }
+
+        function drawRoute(endLat, endLon) {
+            // 기존 경로 삭제
+            polylines.forEach(polyline => polyline.setMap(null));
+            polylines = [];
+
+            if (!userLocation) {
+                alert("현재 위치 정보가 없습니다.");
+                return;
+            }
+
+            fetch("/get_tmap_route", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    startX: userLocation.lon,
+                    startY: userLocation.lat,
+                    endX: endLon,
+                    endY: endLat
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.route_coordinates && data.route_coordinates.length > 0) {
+                    const path = data.route_coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
+                    const polyline = new Tmapv2.Polyline({
+                        path: path,
+                        strokeColor: "#FF0000",
+                        strokeWeight: 6,
+                        map: map
+                    });
+                    polylines.push(polyline);
+                } else if (data.error) {
+                    console.error("TMAP Route Error:", data.error);
+                }
+            })
+            .catch(error => console.error('Error fetching TMAP route:', error));
+        }
+
 
         function sendMessage() {
-            const message = document.getElementById("user-input").value;
-            if (!message.trim()) return;
+            const userInput = document.getElementById("user-input");
+            const message = userInput.value.trim();
+            if (!message) return;
 
             const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML += `<div><strong>나:</strong> ${message}</div>`;
+            chatBox.innerHTML += `<div class="message user"><strong>나:</strong> ${message}</div>`;
+            userInput.value = "";
 
             fetch("/chat", {
                 method: "POST",
@@ -57,43 +116,71 @@
             })
             .then(response => response.json())
             .then(data => {
-                const botReply = data.answer; // data.response -> data.answer
-                chatBox.innerHTML += `<div><strong>봇:</strong> ${botReply}</div>`;
+                chatBox.innerHTML += `<div class="message bot"><strong>봇:</strong> ${data.answer}</div>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
-                // history.push(message, botReply); // history는 이제 백엔드에서 관리하지 않으므로 제거
-                document.getElementById("user-input").value = "";
 
-                // 기존 마커 및 경로 제거
-                map.eachLayer(function(layer) {
-                    if (layer instanceof L.Marker) {
-                        map.removeLayer(layer);
-                    }
-                });
-                if (routingControl) {
-                    map.removeControl(routingControl);
-                    routingControl = null;
+                clearMap();
+                const routeList = document.getElementById("route-list");
+                routeList.innerHTML = ""; // 이전 경로 목록 삭제
+                recommendedLocations = data.locations || [];
+
+                if (userLocation) {
+                     new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
+                        map: map,
+                        icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                        title: '현재 위치'
+                    });
                 }
 
-                // 위치 정보가 있으면 지도에 표시
-                if (data.locations && data.locations.length > 0 && userLocation) {
-                    const waypoints = [L.latLng(userLocation.lat, userLocation.lng)];
-                    data.locations.forEach(location => {
-                        const { name, lat, lon } = location; // latitude, longitude -> lat, lon
-                        L.marker([lat, lon]).addTo(map).bindPopup(name).openPopup();
-                        waypoints.push(L.latLng(lat, lon));
+                if (recommendedLocations.length > 0) {
+                    recommendedLocations.forEach((location, index) => {
+                        const { name, lat, lon } = location;
+
+                        // Add marker for the recommended location
+                        const marker = new Tmapv2.Marker({
+                            position: new Tmapv2.LatLng(lat, lon),
+                            map: map,
+                            icon: `http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_${index + 1}.png`,
+                            title: name
+                        });
+                        markers.push(marker);
+
+                        // Add to route list
+                        const li = document.createElement("li");
+                        li.textContent = name;
+                        li.dataset.lat = lat;
+                        li.dataset.lon = lon;
+                        li.onclick = () => {
+                            // Remove active class from all items
+                            document.querySelectorAll("#route-list li").forEach(item => item.classList.remove("active"));
+                            // Add active class to clicked item
+                            li.classList.add("active");
+                            drawRoute(lat, lon);
+                        };
+                        routeList.appendChild(li);
                     });
 
-                    if (waypoints.length > 1) {
-                        routingControl = L.Routing.control({
-                            waypoints: waypoints,
-                            routeWhileDragging: true,
-                            geocoder: L.Control.Geocoder.nominatim(),
-                            language: 'ko'
-                        }).addTo(map);
-                    }
+                    // Automatically draw route for the first location and highlight it
+                    const firstLocation = recommendedLocations[0];
+                    drawRoute(firstLocation.lat, firstLocation.lon);
+                    routeList.firstChild.classList.add("active");
+
+
+                    // Adjust map to fit all markers
+                    const bounds = new Tmapv2.LatLngBounds();
+                    bounds.extend(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
+                    recommendedLocations.forEach(loc => bounds.extend(new Tmapv2.LatLng(loc.lat, loc.lon)));
+                    map.fitBounds(bounds);
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                chatBox.innerHTML += `<div class="message bot"><strong>봇:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
             });
         }
+
+        window.onload = initTmap;
     </script>
 </body>
 </html>
