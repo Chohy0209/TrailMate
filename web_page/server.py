@@ -40,29 +40,27 @@ def get_tmap_route():
         "endY": data["endY"],
         "startName": "현재 위치",
         "endName": "목적지",
-        "searchOption" : "0",
-        "trafficInfo" : "Y"
+        "searchOption" : "0", # 추천 경로
+        "trafficInfo" : "Y"   # 교통정보 포함
     }
     
-    # TMAP 경로탐색 API 호출
     url = "https://apis.openapi.sk.com/tmap/routes?version=1"
     try:
         response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # HTTP 오류 발생 시 예외 발생
+        response.raise_for_status()
         route_data = response.json()
         
-        # 경로 좌표 추출
-        route_coordinates = []
+        traffic_segments = []
         for feature in route_data.get("features", []):
             if feature["geometry"]["type"] == "LineString":
-                # LineString의 모든 좌표를 추가
-                route_coordinates.extend(feature["geometry"]["coordinates"])
-            elif feature["geometry"]["type"] == "Point":
-                # Point인 경우, 해당 좌표를 단일 경로로 추가 (필요시)
-                # route_coordinates.append(feature["geometry"]["coordinates"])
-                pass # 보통 LineString에 모든 경로가 포함됨
+                segment_coords = feature["geometry"]["coordinates"]
+                traffic_info = feature.get("properties", {}).get("traffic")
+                traffic_segments.append({
+                    "coordinates": segment_coords,
+                    "traffic": traffic_info
+                })
 
-        return jsonify({"route_coordinates": route_coordinates})
+        return jsonify({"traffic_segments": traffic_segments})
 
     except requests.exceptions.RequestException as e:
         print(f"TMAP API 요청 오류: {e}")

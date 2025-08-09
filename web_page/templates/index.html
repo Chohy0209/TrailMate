@@ -20,7 +20,7 @@
             <h2>지금 나만의 캠핑</h2>
             <div id="chat-box"></div>
             <textarea id="user-input" rows="3" placeholder="궁금한 캠핑 정보를 물어보세요!"></textarea>
-            <button onclick="sendMessage()">전송</button>
+            <!--<button onclick="sendMessage()">전송</button>-->
         </div>
     </div>
 
@@ -103,15 +103,31 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.route_coordinates && data.route_coordinates.length > 0) {
-                    const path = data.route_coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
-                    const polyline = new Tmapv2.Polyline({
-                        path: path,
-                        strokeColor: "#0000FF",
-                        strokeWeight: 6,
-                        map: map
+                if (data.traffic_segments && data.traffic_segments.length > 0) {
+                    data.traffic_segments.forEach(segment => {
+                        const path = segment.coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
+                        let color = "#006400"; // 기본 색상 (원활)
+                        const traffic = segment.traffic;
+
+                        if (traffic) {
+                            // TMAP API 교통정보: 0-원활, 1-서행, 2-지체, 3-정체, 4-정보없음
+                            switch (traffic.road_traffic_level) {
+                                case 0: color = "#009900"; break; // 원활 (녹색)
+                                case 1: color = "#739900"; break; // 서행 (녹황색)
+                                case 2: color = "#FF8C00"; break; // 지체 (주황색)
+                                case 3: color = "#FF0000"; break; // 정체 (빨간색)
+                                default: color = "#808080"; // 정보없음 (회색)
+                            }
+                        }
+
+                        const polyline = new Tmapv2.Polyline({
+                            path: path,
+                            strokeColor: color,
+                            strokeWeight: 8,
+                            map: map
+                        });
+                        polylines.push(polyline);
                     });
-                    polylines.push(polyline);
                 } else if (data.error) {
                     console.error("TMAP Route Error:", data.error);
                 }
