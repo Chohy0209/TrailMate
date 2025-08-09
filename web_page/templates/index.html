@@ -8,19 +8,19 @@
 </head>
 <body>
     <div class="container">
+        <div class="map-and-list-container">
+            <div class="map-container">
+                <div id="map_div"></div>
+            </div>
+            <div id="route-list-container">
+                <ul id="route-list"></ul>
+            </div>
+        </div>
         <div class="chat-container">
             <h2>지금 나만의 캠핑</h2>
             <div id="chat-box"></div>
             <textarea id="user-input" rows="3" placeholder="궁금한 캠핑 정보를 물어보세요!"></textarea>
             <button onclick="sendMessage()">전송</button>
-        </div>
-        <div class="map-and-list-container">
-            <div id="route-list-container">
-                <ul id="route-list"></ul>
-            </div>
-            <div class="map-container">
-                <div id="map_div"></div>
-            </div>
         </div>
     </div>
 
@@ -199,6 +199,14 @@
                 chatBox.innerHTML += `<div class="message bot"><strong>봇:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
             });
         }
+
+        document.getElementById("user-input").addEventListener("keydown", function(event) {
+            // Shift + Enter는 줄바꿈을 허용하고, Enter만 눌렀을 때 메시지를 전송합니다.
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault(); // Enter 키의 기본 동작(줄바꿈)을 방지합니다.
+                sendMessage();
+            }
+        });
 
         window.onload = initTmap;
     </script>
