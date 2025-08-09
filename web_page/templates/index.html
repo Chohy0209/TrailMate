@@ -4,21 +4,23 @@
     <meta charset="UTF-8">
     <title>캠토리(Camptory)</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=NgavYPP2ip4Ixo0fWPwEi8WeMz6zosnX56JGpGml"></script>
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
 </head>
 <body>
     <div class="container">
+        <div class="map-and-list-container">
+            <div class="map-container">
+                <div id="map_div"></div>
+            </div>
+            <div id="route-list-container">
+                <ul id="route-list"></ul>
+            </div>
+        </div>
         <div class="chat-container">
             <h2>지금 나만의 캠핑</h2>
             <div id="chat-box"></div>
             <textarea id="user-input" rows="3" placeholder="궁금한 캠핑 정보를 물어보세요!"></textarea>
-            <button onclick="sendMessage()">전송</button>
-        </div>
-        <div class="map-container">
-            <div id="map_div"></div>
-            <div id="route-list-container">
-                <ul id="route-list"></ul>
-            </div>
+            <!--<button onclick="sendMessage()">전송</button>-->
         </div>
     </div>
 
@@ -31,27 +33,45 @@
 
         function initTmap() {
             map = new Tmapv2.Map("map_div", {
-                center: new Tmapv2.LatLng(37.5665, 126.9780),
+                center: new Tmapv2.LatLng(37.5665, 126.9780), // Initial center
                 width: "100%",
                 height: "100%",
                 zoom: 12
             });
 
-            navigator.geolocation.getCurrentPosition(position => {
-                userLocation = {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude
-                };
-                map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
-                new Tmapv2.Marker({
-                    position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
-                    map: map,
-                    icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
-                    title: '현재 위치'
-                });
-            }, () => {
-                alert('현재 위치를 가져올 수 없습니다.');
-            });
+            const seoulStation = {
+                lat: 37.5547,
+                lon: 126.9704
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                position => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+                    map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
+                    new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
+                        map: map,
+                        icon: Tmapv2.asset.Icon.get("b_m_a"), // "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                        label: '현재 위치'
+                    });
+                },
+                // Error callback
+                () => {
+                    console.log("현재 위치를 가져올 수 없어 서울역을 기본 위치로 설정합니다.");
+                    userLocation = seoulStation;
+                    map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
+                    new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
+                        map: map,
+                        icon: Tmapv2.asset.Icon.get("b_m_b"),
+                        title: '기본 위치 (서울역)'
+                    });
+                }
+            );
         }
 
         function clearMap() {
@@ -83,15 +103,31 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.route_coordinates && data.route_coordinates.length > 0) {
-                    const path = data.route_coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
-                    const polyline = new Tmapv2.Polyline({
-                        path: path,
-                        strokeColor: "#FF0000",
-                        strokeWeight: 6,
-                        map: map
+                if (data.traffic_segments && data.traffic_segments.length > 0) {
+                    data.traffic_segments.forEach(segment => {
+                        const path = segment.coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
+                        let color = "#006400"; // 기본 색상 (원활)
+                        const traffic = segment.traffic;
+
+                        if (traffic) {
+                            // TMAP API 교통정보: 0-원활, 1-서행, 2-지체, 3-정체, 4-정보없음
+                            switch (traffic.road_traffic_level) {
+                                case 0: color = "#009900"; break; // 원활 (녹색)
+                                case 1: color = "#739900"; break; // 서행 (녹황색)
+                                case 2: color = "#FF8C00"; break; // 지체 (주황색)
+                                case 3: color = "#FF0000"; break; // 정체 (빨간색)
+                                default: color = "#808080"; // 정보없음 (회색)
+                            }
+                        }
+
+                        const polyline = new Tmapv2.Polyline({
+                            path: path,
+                            strokeColor: color,
+                            strokeWeight: 8,
+                            map: map
+                        });
+                        polylines.push(polyline);
                     });
-                    polylines.push(polyline);
                 } else if (data.error) {
                     console.error("TMAP Route Error:", data.error);
                 }
@@ -128,7 +164,7 @@
                      new Tmapv2.Marker({
                         position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
                         map: map,
-                        icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                        icon: Tmapv2.asset.Icon.get("b_m_a"),
                         title: '현재 위치'
                     });
                 }
@@ -141,8 +177,8 @@
                         const marker = new Tmapv2.Marker({
                             position: new Tmapv2.LatLng(lat, lon),
                             map: map,
-                            icon: `http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_${index + 1}.png`,
-                            title: name
+                            icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // `http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_${index + 1}.png`,
+                            label: name
                         });
                         markers.push(marker);
 
@@ -179,6 +215,14 @@
                 chatBox.innerHTML += `<div class="message bot"><strong>봇:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
             });
         }
+
+        document.getElementById("user-input").addEventListener("keydown", function(event) {
+            // Shift + Enter는 줄바꿈을 허용하고, Enter만 눌렀을 때 메시지를 전송합니다.
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault(); // Enter 키의 기본 동작(줄바꿈)을 방지합니다.
+                sendMessage();
+            }
+        });
 
         window.onload = initTmap;
     </script>

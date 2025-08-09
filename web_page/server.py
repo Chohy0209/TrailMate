@@ -2,6 +2,11 @@
 from flask import Flask, render_template, request, jsonify, session
 import asyncio
 import os
+from dotenv import load_dotenv
+import requests
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
 
 # filterrag_lang.py에서 main_app과 continuation_app을 임포트
 from filterrag_lang import main_app, continuation_app
@@ -14,7 +19,55 @@ app.secret_key = os.urandom(24)
 def index():
     # 세션 초기화
     session.clear()
-    return render_template("index.html")
+    # .env 파일에서 TMAP API 키를 가져와 템플릿에 전달
+    tmap_api_key = os.getenv("TMAP_API_KEY")
+    return render_template("index.html", tmap_api_key=tmap_api_key)
+
+@app.route("/get_tmap_route", methods=["POST"])
+def get_tmap_route():
+    data = request.get_json()
+    tmap_api_key = os.getenv("TMAP_API_KEY")
+    
+    headers = {
+        "appKey": tmap_api_key,
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "startX": data["startX"],
+        "startY": data["startY"],
+        "endX": data["endX"],
+        "endY": data["endY"],
+        "startName": "현재 위치",
+        "endName": "목적지",
+        "searchOption" : "0", # 추천 경로
+        "trafficInfo" : "Y"   # 교통정보 포함
+    }
+    
+    url = "https://apis.openapi.sk.com/tmap/routes?version=1"
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        route_data = response.json()
+        
+        traffic_segments = []
+        for feature in route_data.get("features", []):
+            if feature["geometry"]["type"] == "LineString":
+                segment_coords = feature["geometry"]["coordinates"]
+                traffic_info = feature.get("properties", {}).get("traffic")
+                traffic_segments.append({
+                    "coordinates": segment_coords,
+                    "traffic": traffic_info
+                })
+
+        return jsonify({"traffic_segments": traffic_segments})
+
+    except requests.exceptions.RequestException as e:
+        print(f"TMAP API 요청 오류: {e}")
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        print(f"경로 데이터 처리 오류: {e}")
+        return jsonify({"error": "경로 데이터를 처리하는 중 오류가 발생했습니다."}), 500
 
 @app.route("/chat", methods=["POST"])
 async def chat():
