@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>캠토리(Camptory)</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=NgavYPP2ip4Ixo0fWPwEi8WeMz6zosnX56JGpGml"></script>
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
 </head>
 <body>
     <div class="container">
@@ -31,27 +31,45 @@
 
         function initTmap() {
             map = new Tmapv2.Map("map_div", {
-                center: new Tmapv2.LatLng(37.5665, 126.9780),
+                center: new Tmapv2.LatLng(37.5665, 126.9780), // Initial center
                 width: "100%",
                 height: "100%",
                 zoom: 12
             });
 
-            navigator.geolocation.getCurrentPosition(position => {
-                userLocation = {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude
-                };
-                map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
-                new Tmapv2.Marker({
-                    position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
-                    map: map,
-                    icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
-                    title: '현재 위치'
-                });
-            }, () => {
-                alert('현재 위치를 가져올 수 없습니다.');
-            });
+            const seoulStation = {
+                lat: 37.5547,
+                lon: 126.9704
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                position => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+                    map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
+                    new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
+                        map: map,
+                        icon: Tmapv2.asset.Icon.get("b_m_a"), // "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                        label: '현재 위치'
+                    });
+                },
+                // Error callback
+                () => {
+                    console.log("현재 위치를 가져올 수 없어 서울역을 기본 위치로 설정합니다.");
+                    userLocation = seoulStation;
+                    map.setCenter(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
+                    new Tmapv2.Marker({
+                        position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
+                        map: map,
+                        icon: Tmapv2.asset.Icon.get("b_m_b"),
+                        title: '기본 위치 (서울역)'
+                    });
+                }
+            );
         }
 
         function clearMap() {
@@ -87,7 +105,7 @@
                     const path = data.route_coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
                     const polyline = new Tmapv2.Polyline({
                         path: path,
-                        strokeColor: "#FF0000",
+                        strokeColor: "#0000FF",
                         strokeWeight: 6,
                         map: map
                     });
@@ -128,7 +146,7 @@
                      new Tmapv2.Marker({
                         position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
                         map: map,
-                        icon: "http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                        icon: Tmapv2.asset.Icon.get("b_m_a"),
                         title: '현재 위치'
                     });
                 }
@@ -141,8 +159,8 @@
                         const marker = new Tmapv2.Marker({
                             position: new Tmapv2.LatLng(lat, lon),
                             map: map,
-                            icon: `http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_${index + 1}.png`,
-                            title: name
+                            icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // `http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_${index + 1}.png`,
+                            label: name
                         });
                         markers.push(marker);
 
