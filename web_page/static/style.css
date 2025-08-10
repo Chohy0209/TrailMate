@@ -1,8 +1,18 @@
+.main-title {
+  text-align: center;
+  padding: 20px 0;
+  font-size: 24px;
+  color: #333;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ccc;
+}
+
 body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
   display: flex;
+  flex-direction: column; /* Change to column */
   height: 100vh;
   overflow: hidden; /* Prevent body scrolling */
 }
@@ -10,7 +20,8 @@ body {
 .container {
   display: flex;
   width: 100%;
-  height: 100%;
+  flex-grow: 1; /* Let it take the remaining height */
+  min-height: 0; /* Prevent overflow */
 }
 
 /* Default Layout (Wide Screen) */
@@ -74,6 +85,7 @@ button {
 .message.bot {
   text-align: left;
   color: green;
+  white-space: pre-wrap;
 }
 
 #route-list {
@@ -101,6 +113,8 @@ button {
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
+    height: auto; /* Let height be determined by content */
+    flex-grow: 1;
   }
 
   .map-and-list-container,
@@ -122,7 +136,8 @@ button {
   }
 
   .chat-container {
-    height: 35vh;
+    height: auto; /* Let height be determined by content */
+    flex-grow: 1;
     border-top: 1px solid #ccc;
   }
 }

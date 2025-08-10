@@ -7,6 +7,7 @@
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
 </head>
 <body>
+    <h2 class="main-title">지금 나만의 캠핑</h2>
     <div class="container">
         <div class="map-and-list-container">
             <div class="map-container">
@@ -17,7 +18,7 @@
             </div>
         </div>
         <div class="chat-container">
-            <h2>지금 나만의 캠핑</h2>
+            
             <div id="chat-box"></div>
             <textarea id="user-input" rows="3" placeholder="궁금한 캠핑 정보를 물어보세요!"></textarea>
             <!--<button onclick="sendMessage()">전송</button>-->
@@ -68,7 +69,7 @@
                         position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
                         map: map,
                         icon: Tmapv2.asset.Icon.get("b_m_b"),
-                        title: '기본 위치 (서울역)'
+                        label: '기본 위치 (서울역)'
                     });
                 }
             );
@@ -81,7 +82,7 @@
             polylines = [];
         }
 
-        function drawRoute(endLat, endLon) {
+        function drawRoute(endLat, endLon, endName, listItemId) {
             // 기존 경로 삭제
             polylines.forEach(polyline => polyline.setMap(null));
             polylines = [];
@@ -98,11 +99,18 @@
                     startX: userLocation.lon,
                     startY: userLocation.lat,
                     endX: endLon,
-                    endY: endLat
+                    endY: endLat,
+                    endName: endName
                 })
             })
             .then(response => response.json())
             .then(data => {
+                if (data.error) {
+                    console.error("TMAP Route Error:", data.error);
+                    return;
+                }
+
+                // Draw traffic segments
                 if (data.traffic_segments && data.traffic_segments.length > 0) {
                     data.traffic_segments.forEach(segment => {
                         const path = segment.coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
@@ -128,8 +136,19 @@
                         });
                         polylines.push(polyline);
                     });
-                } else if (data.error) {
-                    console.error("TMAP Route Error:", data.error);
+                }
+
+                // Update the list item with route details
+                const listItem = document.getElementById(listItemId);
+                if (listItem) {
+                    const timeInMinutes = Math.round(data.total_time / 60);
+                    const toll = data.total_toll.toLocaleString('ko-KR');
+                    
+                    listItem.innerHTML = `
+                        <strong>${endName}</strong><br>
+                        경로: ${data.route_summary}<br>
+                        시간: 약 ${timeInMinutes}분, 통행료: ${toll}원
+                    `;
                 }
             })
             .catch(error => console.error('Error fetching TMAP route:', error));
@@ -152,67 +171,40 @@
             })
             .then(response => response.json())
             .then(data => {
-                chatBox.innerHTML += `<div class="message bot"><strong>봇:</strong> ${data.answer}</div>`;
+                chatBox.innerHTML += `<div class="message bot"><strong>캠핑전문가:</strong> ${data.answer}</div>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
 
                 clearMap();
+
+                console.log("Received locations:", data.locations);
+                
                 const routeList = document.getElementById("route-list");
-                routeList.innerHTML = ""; // 이전 경로 목록 삭제
-                recommendedLocations = data.locations || [];
+                routeList.innerHTML = ''; // Clear previous locations
 
-                if (userLocation) {
-                     new Tmapv2.Marker({
-                        position: new Tmapv2.LatLng(userLocation.lat, userLocation.lon),
-                        map: map,
-                        icon: Tmapv2.asset.Icon.get("b_m_a"),
-                        title: '현재 위치'
-                    });
-                }
+                data.locations.forEach((location, index) => {
+                    const listItem = document.createElement("li");
+                    listItem.id = `location-${index}`; // Assign a unique ID for updating later
+                    listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
+                    listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
+                    routeList.appendChild(listItem);
 
-                if (recommendedLocations.length > 0) {
-                    recommendedLocations.forEach((location, index) => {
-                        const { name, lat, lon } = location;
-
-                        // Add marker for the recommended location
+                    // Add marker to map
+                    if (location.latitude && location.longitude) {
+                        const markerPosition = new Tmapv2.LatLng(location.latitude, location.longitude);
                         const marker = new Tmapv2.Marker({
-                            position: new Tmapv2.LatLng(lat, lon),
+                            position: markerPosition,
                             map: map,
-                            icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // `http://tmapapi.sktelecom.com/upload/tmap/marker/pin_b_m_${index + 1}.png`,
-                            label: name
+                            icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // Example icon
+                            label: location.name
                         });
                         markers.push(marker);
-
-                        // Add to route list
-                        const li = document.createElement("li");
-                        li.textContent = name;
-                        li.dataset.lat = lat;
-                        li.dataset.lon = lon;
-                        li.onclick = () => {
-                            // Remove active class from all items
-                            document.querySelectorAll("#route-list li").forEach(item => item.classList.remove("active"));
-                            // Add active class to clicked item
-                            li.classList.add("active");
-                            drawRoute(lat, lon);
-                        };
-                        routeList.appendChild(li);
-                    });
-
-                    // Automatically draw route for the first location and highlight it
-                    const firstLocation = recommendedLocations[0];
-                    drawRoute(firstLocation.lat, firstLocation.lon);
-                    routeList.firstChild.classList.add("active");
-
-
-                    // Adjust map to fit all markers
-                    const bounds = new Tmapv2.LatLngBounds();
-                    bounds.extend(new Tmapv2.LatLng(userLocation.lat, userLocation.lon));
-                    recommendedLocations.forEach(loc => bounds.extend(new Tmapv2.LatLng(loc.lat, loc.lon)));
-                    map.fitBounds(bounds);
-                }
+                        map.setCenter(markerPosition); // Center map on the last location
+                    }
+                });
             })
             .catch(error => {
                 console.error('Error:', error);
-                chatBox.innerHTML += `<div class="message bot"><strong>봇:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
+                chatBox.innerHTML += `<div class="message bot"><strong>캠핑전문가:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
             });
         }
 
