@@ -24,7 +24,8 @@ def index():
     """
     session.clear()  # 새 방문 시 세션 초기화
     tmap_api_key = os.getenv("TMAP_API_KEY")
-    return render_template("index.html", tmap_api_key=tmap_api_key)
+    openweathermap_api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    return render_template("index.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
 
 @app.route("/get_tmap_route", methods=["POST"])
 def get_tmap_route():

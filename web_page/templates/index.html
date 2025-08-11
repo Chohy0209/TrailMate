@@ -9,7 +9,9 @@
 <body>
     <h2 class="main-title">지금 나만의 캠핑</h2>
     <div class="container">
+        
         <div class="map-and-list-container">
+            <div id="weather-info"></div>
             <div class="map-container">
                 <div id="map_div"></div>
             </div>
@@ -32,6 +34,64 @@
         let polylines = [];
         let recommendedLocations = []; // 추천 장소 목록 저장
 
+        function getWeatherAndDisplay(lat, lon) {
+            const apiKey = '{{ openweathermap_api_key }}'; // Loaded from .env via Flask
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=kr`;
+
+            fetch(weatherUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.list && data.list.length > 0) {
+                        let forecastHtml = `<h3>${data["city"]["name"]} 날씨 예보</h3>`;
+                        const dailyForecasts = {};
+
+                        data.list.forEach(item => {
+                            const date = new Date(item.dt * 1000);
+                            const day = date.toLocaleDateString('ko-KR', { weekday: 'short', month: 'numeric', day: 'numeric' });
+                            const temp = item.main.temp;
+                            const description = item.weather[0].description;
+                            const icon = item.weather[0].icon;
+
+                            if (!dailyForecasts[day]) {
+                                dailyForecasts[day] = {
+                                    temps: [],
+                                    descriptions: [],
+                                    icons: []
+                                };
+                            }
+                            dailyForecasts[day].temps.push(temp);
+                            dailyForecasts[day].descriptions.push(description);
+                            dailyForecasts[day].icons.push(icon);
+                        });
+
+                        for (const day in dailyForecasts) {
+                            const temps = dailyForecasts[day].temps;
+                            const avgTemp = (temps.reduce((sum, t) => sum + t, 0) / temps.length).toFixed(1);
+                            // Get most frequent description and icon for the day
+                            const mostFrequentDescription = dailyForecasts[day].descriptions.sort((a,b) =>
+                                dailyForecasts[day].descriptions.filter(v => v===a).length -
+                                dailyForecasts[day].descriptions.filter(v => v===b).length
+                            ).pop();
+                            const mostFrequentIcon = dailyForecasts[day].icons.sort((a,b) =>
+                                dailyForecasts[day].icons.filter(v => v===a).length -
+                                dailyForecasts[day].icons.filter(v => v===b).length
+                            ).pop();
+
+                            forecastHtml += `
+                                <p><strong>${day}</strong>: ${mostFrequentDescription}, ${avgTemp}°C <img src="http://openweathermap.org/img/w/${mostFrequentIcon}.png" alt="${mostFrequentDescription}" style="vertical-align: middle;"></p>
+                            `;
+                        }
+                        document.getElementById('weather-info').innerHTML = forecastHtml;
+                    } else {
+                        document.getElementById('weather-info').innerHTML = `<p>날씨 예보를 불러올 수 없습니다.</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('날씨 데이터 가져오기 오류:', error);
+                    document.getElementById('weather-info').innerHTML = `<p>날씨 예보를 불러오는 중 오류가 발생했습니다.</p>`;
+                });
+        }
+
         function initTmap() {
             map = new Tmapv2.Map("map_div", {
                 center: new Tmapv2.LatLng(37.5665, 126.9780), // Initial center
@@ -39,6 +99,11 @@
                 height: "100%",
                 zoom: 12
             });
+
+            // Call getWeatherAndDisplay with initial map center
+            const initialLat = 37.5665; // Seoul Latitude
+            const initialLon = 126.9780; // Seoul Longitude
+            getWeatherAndDisplay(initialLat, initialLon);
 
             const seoulStation = {
                 lat: 37.5547,
@@ -150,9 +215,12 @@
                         시간: 약 ${timeInMinutes}분, 통행료: ${toll}원
                     `;
                 }
+            // Update weather for the selected location
+                getWeatherAndDisplay(endLat, endLon);
             })
             .catch(error => console.error('Error fetching TMAP route:', error));
         }
+
 
 
         function sendMessage() {
