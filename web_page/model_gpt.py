@@ -54,7 +54,7 @@ def oai_text(prompt: str, model: str = GPT_MODEL) -> Dict[str, Any]:
     resp = client.responses.create(
         model=model,
         input=prompt,
-        stream = True,
+        # stream = True,
     )
     # 공식 SDK는 output_text 제공 → 파싱 인덱스 실수 방지
     return {"text": (resp.output_text or "").strip(), "request_id": getattr(resp, "_request_id", None)}
