@@ -159,8 +159,12 @@ async def chat():
                 session.clear()  # 일반 답변 후 세션 초기화
 
         final_answer = result.get("final_answer", "답변을 생성하지 못했습니다.")
-        locations = result.get("locations", [])
-        print(f"[DEBUG] server.py에서 model_gpt.py로부터 받은 locations: {locations}")
+        
+        # Debugging: Log locations received from model_gpt.py
+        raw_locations_from_model = result.get("locations", [])
+        print(f"[DEBUG] server.py: model_gpt.py로부터 받은 raw locations: {raw_locations_from_model}")
+
+        locations = raw_locations_from_model
 
         # Ensure locations is a list and contains unique items if necessary
         # This part is crucial for preventing frontend duplication if backend sends duplicates
@@ -171,7 +175,9 @@ async def chat():
                 unique_locations.append(loc)
                 seen_names.add(loc.get('name'))
         locations = unique_locations
-        print(f"[DEBUG] server.py에서 frontend로 보낼 최종 locations (중복 제거 후): {locations}")
+        
+        # Debugging: Log final locations sent to frontend
+        print(f"[DEBUG] server.py: frontend로 보낼 최종 locations (중복 제거 후): {locations}")
 
         return jsonify({
             "answer": final_answer,

@@ -14,6 +14,9 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langgraph.graph import StateGraph, END
 from dotenv import load_dotenv
 
+#naver api
+from naver_api import build_snippet_per_doc, format_snippets_as_text
+
 load_dotenv()
 
 # ===== 환경 설정 =====
@@ -51,6 +54,7 @@ def oai_text(prompt: str, model: str = GPT_MODEL) -> Dict[str, Any]:
     resp = client.responses.create(
         model=model,
         input=prompt,
+        stream = True,
     )
     # 공식 SDK는 output_text 제공 → 파싱 인덱스 실수 방지
     return {"text": (resp.output_text or "").strip(), "request_id": getattr(resp, "_request_id", None)}
@@ -156,35 +160,105 @@ def classify_camping_type(state: GraphState) -> dict:
 
 # --- RAG + 웹검색 노드 (웹검색은 mock) ---
 
-async def general_web_search_async(query: str, camping_type: str) -> List[str]:
-    await asyncio.sleep(0.2)  # 실제 API 대기 시뮬레이션
-    mock_results = {
-        "유료캠핑장": [
-            "[웹] 속초 오토캠핑장 후기",
-            "[웹] 강릉 해변 캠핑장 추천",
-            "[웹] 양양 캠핑장 예약 팁",
-        ],
-        "글램핑/카라반": [
-            "[웹] 가평 카라반 숙소 리뷰",
-            "[웹] 제주 글램핑 인기 장소",
-            "[웹] 남해 글램핑 시설 안내",
-        ],
-        "오지/노지캠핑": [
-            "[웹] 제주도 노지캠핑 스팟",
-            "[웹] 강원도 오지캠핑 금지 구역",
-            "[웹] 차박 성지 베스트 5",
-        ],
-    }
-    pool = mock_results.get(camping_type, [])
-    k = min(3, len(pool))
-    return random.sample(pool, k=k) if k > 0 else []
+# async def general_web_search_async(query: str, camping_type: str) -> List[str]:
+#     await asyncio.sleep(0.2)  # 실제 API 대기 시뮬레이션
+#     mock_results = {
+#         "유료캠핑장": [
+#             "[웹] 속초 오토캠핑장 후기",
+#             "[웹] 강릉 해변 캠핑장 추천",
+#             "[웹] 양양 캠핑장 예약 팁",
+#         ],
+#         "글램핑/카라반": [
+#             "[웹] 가평 카라반 숙소 리뷰",
+#             "[웹] 제주 글램핑 인기 장소",
+#             "[웹] 남해 글램핑 시설 안내",
+#         ],
+#         "오지/노지캠핑": [
+#             "[웹] 제주도 노지캠핑 스팟",
+#             "[웹] 강원도 오지캠핑 금지 구역",
+#             "[웹] 차박 성지 베스트 5",
+#         ],
+#     }
+#     pool = mock_results.get(camping_type, [])
+#     k = min(3, len(pool))
+#     return random.sample(pool, k=k) if k > 0 else []
 
+
+# async def search_camping(state: GraphState, camping_type: str) -> dict:
+#     question = state.get("original_question", state["question"])
+#     print(f"\n--- 🔍 {camping_type} 유형으로 벡터DB 검색 시작 ---")
+#     try:
+#         # 벡터DB에서 유사도 검색 시 메타필터 지원 유무에 따라 분기
+#         try:
+#             docs_with_metadata = await asyncio.to_thread(
+#                 vectordb.similarity_search_with_score,
+#                 query=question,
+#                 k=2,
+#                 filter={"캠핑유형": camping_type},
+#             )
+#         except TypeError:
+#             # langchain/chroma 버전에 따라 filter 인자 미지원 가능 → 필터 없이 검색
+#             docs_with_metadata = await asyncio.to_thread(
+#                 vectordb.similarity_search_with_score,
+#                 query=question,
+#                 k=2,
+#             )
+
+#         context: List[str] = []
+#         locations: List[dict] = []
+#         unique_names = set()
+#         if docs_with_metadata:
+#             print("✔️ RAG 검색 결과가 발견되었습니다.")
+#             for i, (doc, score) in enumerate(docs_with_metadata):
+#                 location_name = doc.metadata.get("캠핑장이름", "이름 정보 없음")
+#                 if location_name not in unique_names:
+#                     unique_names.add(location_name)
+                    
+#                     metadata_str = f"메타데이터: {getattr(doc, 'metadata', {})}"
+#                     content_with_metadata = f"문서 내용: {doc.page_content}\n{metadata_str}"
+#                     context.append(content_with_metadata)
+                    
+#                     location_info = {
+#                         "name": location_name,
+#                         "address": doc.metadata.get("캠핑장주소", "주소 정보 없음"),
+#                         "latitude": doc.metadata.get("위도", None),
+#                         "longitude": doc.metadata.get("경도", None)
+#                     }
+#                     locations.append(location_info)
+                    
+#                     print(
+#                         f"  [{i+1}] 문서: {doc.page_content[:40]}... | 유사도: {score:.4f} | 메타데이터: {getattr(doc, 'metadata', {})}"
+#                     )
+#         else:
+#             print(f"⚠️ {camping_type} 유형에 대한 문서가 벡터DB에서 검색되지 않았습니다.")
+
+#         # 오지/노지캠핑은 웹 검색 생략
+#         if camping_type != "오지/노지캠핑":
+#             print("--- 🌐 웹 검색 시작 ---")
+#             web_results = await general_web_search_async(question, camping_type)
+#             if web_results:
+#                 print("✔️ 웹 검색 결과가 추가되었습니다.")
+#                 for i, res in enumerate(web_results):
+#                     context.append(res)
+#                     print(f"  [웹{i+1}] {res}")
+#             else:
+#                 print("⚠️ 웹 검색 결과가 없습니다.")
+#         else:
+#             print("🌐 '오지/노지캠핑' 유형은 웹 검색을 생략합니다.")
+
+#         print(f"[DEBUG] search_camping 함수에서 반환될 locations: {locations}")
+#         return {"context": context, "locations": locations, "search_attempted": True}
+    
+#     except Exception as e:
+#         print(f"❌ 검색 중 오류 발생: {e}")
+#         return {"context": ["검색 오류 발생"], "locations": [], "search_attempted": True, "error_message": str(e)}
 
 async def search_camping(state: GraphState, camping_type: str) -> dict:
+    """RAG로 문서 2개 뽑고 → 네이버 API로 각 문서당 최신글 1개 본문 파싱 → 키워드 문장만 묶어서 컨텍스트에 추가"""
     question = state.get("original_question", state["question"])
     print(f"\n--- 🔍 {camping_type} 유형으로 벡터DB 검색 시작 ---")
     try:
-        # 벡터DB에서 유사도 검색 시 메타필터 지원 유무에 따라 분기
+        # RAG: 캠핑유형 필터 지원 여부에 따라 분기
         try:
             docs_with_metadata = await asyncio.to_thread(
                 vectordb.similarity_search_with_score,
@@ -193,7 +267,6 @@ async def search_camping(state: GraphState, camping_type: str) -> dict:
                 filter={"캠핑유형": camping_type},
             )
         except TypeError:
-            # langchain/chroma 버전에 따라 filter 인자 미지원 가능 → 필터 없이 검색
             docs_with_metadata = await asyncio.to_thread(
                 vectordb.similarity_search_with_score,
                 query=question,
@@ -203,52 +276,68 @@ async def search_camping(state: GraphState, camping_type: str) -> dict:
         context: List[str] = []
         locations: List[dict] = []
         unique_names = set()
+
         if docs_with_metadata:
             print("✔️ RAG 검색 결과가 발견되었습니다.")
             for i, (doc, score) in enumerate(docs_with_metadata):
-                location_name = doc.metadata.get("캠핑장이름", "이름 정보 없음")
-                if location_name not in unique_names:
-                    unique_names.add(location_name)
-                    
-                    metadata_str = f"메타데이터: {getattr(doc, 'metadata', {})}"
-                    content_with_metadata = f"문서 내용: {doc.page_content}\n{metadata_str}"
-                    context.append(content_with_metadata)
-                    
-                    location_info = {
-                        "name": location_name,
-                        "address": doc.metadata.get("캠핑장주소", "주소 정보 없음"),
-                        "latitude": doc.metadata.get("위도", None),
-                        "longitude": doc.metadata.get("경도", None)
-                    }
-                    locations.append(location_info)
-                    
-                    print(
-                        f"  [{i+1}] 문서: {doc.page_content[:40]}... | 유사도: {score:.4f} | 메타데이터: {getattr(doc, 'metadata', {})}"
-                    )
+                meta = getattr(doc, "metadata", {}) or {}
+                location_name = meta.get("캠핑장이름", "이름 정보 없음")
+                if location_name in unique_names:
+                    continue
+                unique_names.add(location_name)
+
+                # 로컬 문서 일부 + 메타를 컨텍스트에 넣어도 되고(선택)
+                context.append(
+                    f"[LOCAL{i+1}] {location_name} | {meta.get('캠핑장주소','')}\n{doc.page_content[:300]}..."
+                )
+
+                locations.append({
+                    "name": location_name,
+                    "address": meta.get("캠핑장주소", "주소 정보 없음"),
+                    "latitude": meta.get("위도"),
+                    "longitude": meta.get("경도"),
+                })
+
+                print(f"  [{i+1}] 문서 유사도: {score:.4f} | 메타: {meta}")
+
         else:
             print(f"⚠️ {camping_type} 유형에 대한 문서가 벡터DB에서 검색되지 않았습니다.")
 
         # 오지/노지캠핑은 웹 검색 생략
-        if camping_type != "오지/노지캠핑":
-            print("--- 🌐 웹 검색 시작 ---")
-            web_results = await general_web_search_async(question, camping_type)
-            if web_results:
-                print("✔️ 웹 검색 결과가 추가되었습니다.")
-                for i, res in enumerate(web_results):
-                    context.append(res)
-                    print(f"  [웹{i+1}] {res}")
-            else:
-                print("⚠️ 웹 검색 결과가 없습니다.")
-        else:
-            print("🌐 '오지/노지캠핑' 유형은 웹 검색을 생략합니다.")
+        if camping_type != "오지/노지캠핑" and docs_with_metadata:
+            print("--- 🌐 네이버 검색 + 본문 파싱 시작 ---")
+            # 네이버 API: 문서당 최신글 1개 뽑고 본문→키워드문장만 추림
+            snippets = await build_snippet_per_doc(
+                docs_with_metadata=docs_with_metadata,
+                per_type_display=20,
+                fetch_timeout=8,
+                max_chars=2000,
+                enforce_name_in_title=True,
+                include_when_no_local_modified=True,
+            )
+            if snippets:
+                # LLM에 바로 먹일 포맷(둘 중 하나 선택)
+                # 1) 블록 형태
+                # ctx_text = format_snippets_as_text(snippets, style="block", body_sep="comma")
 
-        print(f"[DEBUG] search_camping 함수에서 반환될 locations: {locations}")
+                # 2) 키-값(JSON 비스무리) 형태 → 모델이 파싱하기 쉽다
+                ctx_text = format_snippets_as_text(snippets, style="kv", body_sep="comma")
+                context.append(ctx_text)
+                print(f"✔️ 네이버 스니펫 {len(snippets)}개를 컨텍스트에 추가")
+            else:
+                print("⚠️ 네이버 스니펫을 만들 수 있는 최신 글이 없습니다.")
+
+        print(f"[DEBUG] search_camping() 반환 locations: {len(locations)}개")
         return {"context": context, "locations": locations, "search_attempted": True}
-    
+
     except Exception as e:
         print(f"❌ 검색 중 오류 발생: {e}")
-        return {"context": ["검색 오류 발생"], "locations": [], "search_attempted": True, "error_message": str(e)}
-
+        return {
+            "context": ["검색 오류 발생"],
+            "locations": [],
+            "search_attempted": True,
+            "error_message": str(e),
+        }
 
 async def search_paid_camping(state):
     return await search_camping(state, "유료캠핑장")

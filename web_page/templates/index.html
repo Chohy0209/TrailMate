@@ -7,7 +7,13 @@
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
 </head>
 <body>
-    <h2 class="main-title">지금 나만의 캠핑</h2>
+    <h2 class="main-title">
+        지금 나만의 캠핑
+        <label class="switch">
+            <input type="checkbox" id="darkModeToggle">
+            <span class="slider round"></span>
+        </label>
+    </h2>
     <div class="container">
         
         <div class="map-and-list-container">
@@ -78,7 +84,7 @@
                             ).pop();
 
                             forecastHtml += `
-                                <p><strong>${day}</strong>: ${mostFrequentDescription}, ${avgTemp}°C <img src="http://openweathermap.org/img/w/${mostFrequentIcon}.png" alt="${mostFrequentDescription}" style="vertical-align: middle;"></p>
+                                <p><strong>${day}</strong>: <br>${mostFrequentDescription} ${avgTemp}°C <img src="http://openweathermap.org/img/w/${mostFrequentIcon}.png" alt="${mostFrequentDescription}"></p>
                             `;
                         }
                         document.getElementById('weather-info').innerHTML = forecastHtml;
@@ -266,9 +272,20 @@
                             label: location.name
                         });
                         markers.push(marker);
-                        map.setCenter(markerPosition); // Center map on the last location
+                        // map.setCenter(markerPosition); // Removed from loop
                     }
-                });
+                }); // End of forEach loop
+
+                // Scroll the route list to the top to ensure first items are visible
+                routeList.scrollTop = 0;
+
+                // Set map center after all markers are added, to the first location or current center
+                if (data.locations.length > 0) {
+                    const firstLocation = data.locations[0];
+                    if (firstLocation.latitude && firstLocation.longitude) {
+                        map.setCenter(new Tmapv2.LatLng(firstLocation.latitude, firstLocation.longitude));
+                    }
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -285,6 +302,41 @@
         });
 
         window.onload = initTmap;
+
+        // Dark Mode Toggle Logic
+        const darkModeToggle = document.getElementById('darkModeToggle'); // This is now the checkbox input
+        const body = document.body;
+
+        // Function to apply theme
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-mode');
+                darkModeToggle.checked = true; // Set checkbox to checked
+            } else {
+                body.classList.remove('dark-mode');
+                darkModeToggle.checked = false; // Set checkbox to unchecked
+            }
+        }
+
+        // Check for saved theme preference on load
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            // Default to light mode if no preference saved
+            applyTheme('light');
+        }
+
+        // Toggle theme on checkbox change
+        darkModeToggle.addEventListener('change', () => { // Changed from 'click' to 'change'
+            if (darkModeToggle.checked) { // Check if checkbox is checked
+                applyTheme('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                applyTheme('light');
+                localStorage.setItem('theme', 'light');
+            }
+        });
     </script>
 </body>
 </html>
