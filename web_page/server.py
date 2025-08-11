@@ -51,7 +51,7 @@ def get_tmap_route():
         "endY": data["endY"],
         "startName": "현재 위치",
         "endName": data.get("endName", "목적지"),
-        "searchOption": "0",  # 추천 경로
+        "searchOption": 0,  # 추천+실시간교통정보
         "trafficInfo": "Y"    # 실시간 교통정보 포함
     }
     
@@ -62,46 +62,7 @@ def get_tmap_route():
         response.raise_for_status()  # HTTP 오류 발생 시 예외 발생
         route_data = response.json()
         
-        features = route_data.get("features", [])
-        
-        # 경로 요약 정보 추출
-        summary = features[0].get("properties", {})
-        total_time = summary.get("totalTime", 0)
-        total_toll = summary.get("totalFare", 0)
-
-        # 경로 데이터에서 경유지 정보 추출
-        waypoints = []
-        for feature in features:
-            if feature.get("geometry", {}).get("type") == "Point":
-                point_name = feature.get("properties", {}).get("name", "")
-                if point_name and point_name not in ["출발", "도착"]:
-                    waypoints.append(point_name)
-        
-        # Build route summary
-        start_name = payload['startName']
-        end_name = payload['endName']
-        if waypoints:
-            route_summary = f"{start_name} → {' → '.join(waypoints)} → {end_name}"
-        else:
-            route_summary = f"{start_name} → {end_name}"
-
-        # 경로 데이터에서 교통정보 세그먼트 추출
-        traffic_segments = []
-        for feature in features:
-            if feature.get("geometry", {}).get("type") == "LineString":
-                segment_coords = feature["geometry"]["coordinates"]
-                traffic_info = feature.get("properties", {}).get("traffic")
-                traffic_segments.append({
-                    "coordinates": segment_coords,
-                    "traffic": traffic_info
-                })
-
-        return jsonify({
-            "traffic_segments": traffic_segments,
-            "total_time": total_time,
-            "total_toll": total_toll,
-            "route_summary": route_summary
-        })
+        return jsonify(route_data)
 
     except requests.exceptions.RequestException as e:
         print(f"TMAP API 요청 오류: {e}")
