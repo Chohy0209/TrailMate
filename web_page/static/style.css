@@ -141,3 +141,26 @@ button {
     border-top: 1px solid #ccc;
   }
 }
+
+#weather-info {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  background-color: #f0f8ff; /* Light blue background */
+  flex-wrap: wrap; /* Allow items to wrap to the next line on smaller screens */
+}
+
+#weather-info h3 {
+  width: 100%; /* Make heading take full width */
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+#weather-info p {
+  margin: 5px 10px; /* Add some margin around each daily forecast */
+  text-align: center;
+  flex-shrink: 0; /* Prevent shrinking */
+}
