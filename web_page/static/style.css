@@ -1,91 +1,217 @@
-.main-title {
-  text-align: center;
-  padding: 20px 0;
-  font-size: 24px;
-  color: #333;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ccc;
+:root {
+  --bg-color: #f0f2f5;
+  --main-title-bg: #ffffff;
+  --main-title-color: #2c3e50;
+  --container-bg: #ffffff;
+  --border-color: #e0e0e0;
+  --weather-info-bg: #e6f7ff;
+  --weather-info-color: #0056b3;
+  --chat-box-bg: #f9f9f9;
+  --chat-box-border: #dcdcdc;
+  --user-message-bg: #e7f3ff;
+  --user-message-color: #007bff;
+  --bot-message-bg: #f0f0f0;
+  --bot-message-color: #333;
+  --route-list-bg: #fdfdfd;
+  --route-list-item-hover: #e9ecef;
+  --input-border: #dcdcdc;
+  --button-bg: #007bff;
+  --button-hover-bg: #0056b3;
 }
 
+body.dark-mode {
+  --bg-color: #2c3e50;
+  --main-title-bg: #34495e;
+  --main-title-color: #ecf0f1;
+  --container-bg: #34495e;
+  --border-color: #4a627a;
+  --weather-info-bg: #4a627a;
+  --weather-info-color: #ecf0f1;
+  --chat-box-bg: #3b536b;
+  --chat-box-border: #4a627a;
+  --user-message-bg: #2980b9;
+  --user-message-color: #ffffff;
+  --bot-message-bg: #4a627a;
+  --bot-message-color: #ecf0f1;
+  --route-list-bg: #3b536b;
+  --route-list-item-hover: #4a627a;
+  --input-border: #4a627a;
+  --button-bg: #2980b9;
+  --button-hover-bg: #1f618d;
+}
+
+/* Apply variables */
 body {
-  font-family: sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column; /* Change to column */
-  height: 100vh;
-  overflow: hidden; /* Prevent body scrolling */
+  flex-direction: column;
+  height: 100vh; /* Set height back to 100vh for wide screens */
+  overflow: hidden; /* Prevent all scrolling by default */
+  background-color: var(--bg-color);
+}
+
+.main-title {
+  text-align: center;
+  padding: 15px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--main-title-color);
+  background-color: var(--main-title-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .container {
   display: flex;
-  width: 100%;
-  flex-grow: 1; /* Let it take the remaining height */
-  min-height: 0; /* Prevent overflow */
+  width: 95%;
+  max-width: 1400px; /* Max width for larger screens */
+  margin: 20px auto; /* Center the container */
+  flex-grow: 1;
+  min-height: 0;
+  background-color: var(--container-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Ensures border-radius applies to children */
 }
 
 /* Default Layout (Wide Screen) */
 .map-and-list-container {
-  flex: 1;
+  flex: 3; /* Give more space to map/list */
   display: flex;
   flex-direction: column;
-  min-width: 0; /* Prevent flexbox overflow */
+  min-width: 0;
+  border-right: 1px solid var(--border-color);
 }
 
 .chat-container {
-  flex: 1;
+  flex: 1; /* Chat takes less space */
   display: flex;
   flex-direction: column;
-  border-left: 1px solid #ccc;
-  padding: 10px;
-  min-width: 0; /* Prevent flexbox overflow */
+  padding: 15px;
+  min-width: 0;
+}
+
+#weather-info {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--weather-info-bg);
+  flex-wrap: wrap;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  flex-shrink: 0;
+}
+
+#weather-info h3 {
+  width: 100%;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--weather-info-color);
+  font-size: 1.2em;
+}
+
+#weather-info p {
+  margin: 5px 5px; /* Reduced horizontal margin */
+  text-align: center;
+  flex-shrink: 1; /* Allow shrinking */
+  font-size: 0.9em;
+  color: var(--bot-message-color);
+}
+
+#weather-info img {
+  width: 20px;
+  height: 20px;
 }
 
 .map-container {
-  flex-grow: 1; /* Takes remaining space */
-  min-height: 0; /* Allow shrinking */
+  flex-grow: 1;
+  min-height: 0;
+  background-color: var(--bg-color);
+  max-height: 470px; /* Added to reduce map height */
 }
 
 #map_div {
   width: 100%;
   height: 100%;
+  border-bottom-left-radius: 12px; /* Match container */
 }
 
 #route-list-container {
-  border-top: 1px solid #ccc;
-  height: 200px; /* Fixed height */
+  border-top: 1px solid var(--border-color);
+  height: 200px; /* Slightly more height */
   overflow-y: auto;
+  background-color: var(--route-list-bg);
+  border-bottom-left-radius: 12px; /* Match container */
+  flex-shrink: 0;
 }
 
 #chat-box {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #ccc;
-  padding: 5px;
+  border: 1px solid var(--chat-box-border);
+  border-radius: 8px;
+  padding: 10px;
   margin-bottom: 10px;
+  background-color: var(--chat-box-bg);
+  display: flex;
+  flex-direction: column;
 }
 
 #user-input {
-  width: 100%;
-  height: 50px;
-  resize: none;
+  width: calc(100% - 20px); /* Account for padding */
+  padding: 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  resize: vertical; /* Allow vertical resize */
+  min-height: 40px;
+  max-height: 120px;
+  font-size: 1em;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 button {
   width: 100%;
-  height: 40px;
-  margin-top: 5px;
+  padding: 12px 0;
+  margin-top: 10px;
+  background-color: var(--button-bg);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-1px);
 }
 
 .message.user {
   text-align: right;
-  color: blue;
+  color: var(--user-message-color);
+  background-color: var(--user-message-bg);
+  padding: 8px 12px;
+  border-radius: 15px 15px 0 15px;
+  margin: 5px 0 5px auto;
+  max-width: 80%;
+  word-wrap: break-word;
 }
 
 .message.bot {
   text-align: left;
-  color: green;
-  white-space: pre-wrap;
+  color: var(--bot-message-color);
+  background-color: var(--bot-message-bg);
+  padding: 8px 12px;
+  border-radius: 15px 15px 15px 0;
+  margin: 5px auto 5px 0;
+  max-width: 80%;
+  word-wrap: break-word;
 }
 
 #route-list {
@@ -95,72 +221,164 @@ button {
 }
 
 #route-list li {
-  padding: 10px;
+  padding: 12px 15px;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+  font-size: 0.95em;
+  color: var(--bot-message-color);
+}
+
+#route-list li:last-child {
+  border-bottom: none;
 }
 
 #route-list li:hover {
-  background-color: #f0f0f0;
+  background-color: var(--route-list-item-hover);
 }
 
 #route-list li.active {
-  background-color: #d0e0f0;
+  background-color: #d1e7dd; /* Light green for active */
   font-weight: bold;
+  color: #28a745;
 }
 
 /* Responsive Layout (Narrow Screen) */
 @media (max-width: 768px) {
+  body {
+    height: auto; /* Allow height to expand */
+    overflow-y: auto; /* Enable vertical scrolling for narrow screens */
+  }
+
   .container {
     flex-direction: column;
-    height: auto; /* Let height be determined by content */
-    flex-grow: 1;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .map-and-list-container,
   .chat-container {
-    flex: none; /* Reset flex property */
+    flex: none;
     width: 100%;
     border-left: none;
+    border-right: none; /* Remove border-right on narrow screens */
+  }
+
+  #weather-info {
+    border-radius: 0;
   }
 
   .map-container {
-    height: 45vh;
+    height: 40vh;
     flex-grow: 0;
   }
 
+  #map_div {
+    border-radius: 0;
+  }
+
   #route-list-container {
-    height: 20vh;
-    max-height: none; /* Reset max-height */
-    border-top: 1px solid #ccc;
+    height: 25vh;
+    max-height: none;
+    border-radius: 0;
+    border-top: 1px solid var(--border-color);
   }
 
   .chat-container {
-    height: auto; /* Let height be determined by content */
+    height: auto;
     flex-grow: 1;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid var(--border-color);
+  }
+
+  #user-input {
+    width: calc(100% - 20px);
   }
 }
 
-#weather-info {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-  background-color: #f0f8ff; /* Light blue background */
-  flex-wrap: wrap; /* Allow items to wrap to the next line on smaller screens */
+/* Remove old #darkModeToggle styles */
+/* #darkModeToggle { */
+/*   float: right; */
+/*   margin-right: 20px; */
+/*   padding: 6px 12px; */
+/*   font-size: 0.75em; */
+/*   cursor: pointer; */
+/*   border-radius: 5px; */
+/*   border: 1px solid var(--border-color); */
+/*   background-color: var(--main-title-bg); */
+/*   color: var(--main-title-color); */
+/*   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; */
+/* } */
+
+/* #darkModeToggle:hover { */
+/*   background-color: var(--route-list-item-hover); */
+/* } */
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px; /* Smaller width */
+  height: 20px; /* Smaller height */
+  float: right; /* Keep it on the right */
+  margin-right: 20px; /* Keep margin */
+  vertical-align: middle; /* Align with text */
 }
 
-#weather-info h3 {
-  width: 100%; /* Make heading take full width */
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 10px;
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-#weather-info p {
-  margin: 5px 10px; /* Add some margin around each daily forecast */
-  text-align: center;
-  flex-shrink: 0; /* Prevent shrinking */
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 20px; /* Make it round */
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px; /* Smaller circle */
+  width: 16px; /* Smaller circle */
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+  border-radius: 50%; /* Make it a circle */
+}
+
+input:checked + .slider {
+  background-color: #2196F3; /* Blue when checked */
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(20px); /* Move circle to right */
+  -ms-transform: translateX(20px);
+  transform: translateX(20px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
