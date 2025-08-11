@@ -51,7 +51,7 @@ def get_tmap_route():
         "endY": data["endY"],
         "startName": "현재 위치",
         "endName": data.get("endName", "목적지"),
-        "searchOption": "2",  # 추천 경로
+        "searchOption": "0",  # 추천 경로
         "trafficInfo": "Y"    # 실시간 교통정보 포함
     }
     
@@ -67,7 +67,7 @@ def get_tmap_route():
         # 경로 요약 정보 추출
         summary = features[0].get("properties", {})
         total_time = summary.get("totalTime", 0)
-        total_toll = summary.get("totalToll", 0)
+        total_toll = summary.get("totalFare", 0)
 
         # 경로 데이터에서 경유지 정보 추출
         waypoints = []

@@ -185,12 +185,14 @@
                 if (data.traffic_segments && data.traffic_segments.length > 0) {
                     data.traffic_segments.forEach(segment => {
                         const path = segment.coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
+                        console.log(path);
+                        
                         let color = "#006400"; // 기본 색상 (원활)
                         const traffic = segment.traffic;
-
+                        
                         if (traffic) {
                             // TMAP API 교통정보: 0-원활, 1-서행, 2-지체, 3-정체, 4-정보없음
-                            switch (traffic.road_traffic_level) {
+                            switch (traffic.trafficIndex) {
                                 case 0: color = "#009900"; break; // 원활 (녹색)
                                 case 1: color = "#739900"; break; // 서행 (녹황색)
                                 case 2: color = "#FF8C00"; break; // 지체 (주황색)
@@ -238,6 +240,13 @@
             chatBox.innerHTML += `<div class="message user"><strong>나:</strong> ${message}</div>`;
             userInput.value = "";
 
+            const loadingMessage = document.createElement('div');
+            loadingMessage.id = 'loading-message';
+            loadingMessage.className = 'message bot';
+            loadingMessage.innerHTML = '<strong>캠핑전문가:</strong> 답변 생성 중...';
+            chatBox.appendChild(loadingMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
             fetch("/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -245,8 +254,26 @@
             })
             .then(response => response.json())
             .then(data => {
-                chatBox.innerHTML += `<div class="message bot"><strong>캠핑전문가:</strong> ${data.answer}</div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
+                loadingMessage.remove();
+
+                const botMessageContainer = document.createElement('div');
+                botMessageContainer.className = 'message bot';
+                botMessageContainer.innerHTML = '<strong>캠핑전문가:</strong> ';
+                chatBox.appendChild(botMessageContainer);
+
+                const answerSpan = document.createElement('span');
+                botMessageContainer.appendChild(answerSpan);
+
+                let i = 0;
+                function typeWriter() {
+                    if (i < data.answer.length) {
+                        answerSpan.innerHTML += data.answer.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, 10);
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+                }
+                typeWriter();
 
                 clearMap();
 
@@ -288,6 +315,7 @@
                 }
             })
             .catch(error => {
+                loadingMessage.remove();
                 console.error('Error:', error);
                 chatBox.innerHTML += `<div class="message bot"><strong>캠핑전문가:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
             });
