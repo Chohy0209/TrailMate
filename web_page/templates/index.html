@@ -297,12 +297,21 @@
             chatBox.innerHTML += `<div class="message user"><strong>나:</strong> ${message}</div>`;
             userInput.value = "";
 
-            // 1. Add "답변 생성 중..." message
+            // 1. Add "답변 생성 중..." message for chat box
             const botResponseDiv = document.createElement('div');
             botResponseDiv.className = 'message bot';
-            botResponseDiv.innerHTML = '<strong>캠핑전문가:</strong> 답변 생성 중...';
+            botResponseDiv.innerHTML = '<strong>캠토리:</strong> 답변 생성 중...';
             chatBox.appendChild(botResponseDiv);
             chatBox.scrollTop = chatBox.scrollHeight; // Scroll to show typing indicator
+
+            // Add "캠핑장 대기 중" message to route-list
+            const routeList = document.getElementById("route-list");
+            routeList.innerHTML = ''; // Clear previous locations before adding pending message
+            const pendingMessageItem = document.createElement('li');
+            pendingMessageItem.id = 'pending-camping-message';
+            pendingMessageItem.innerHTML = '캠핑장 검색 중...';
+            routeList.appendChild(pendingMessageItem);
+
 
             fetch("/chat", {
                 method: "POST",
@@ -313,9 +322,9 @@
             .then(data => {
                 // 2. Implement typewriter effect
                 const fullText = data.answer;
-                botResponseDiv.innerHTML = '<strong>캠핑전문가:</strong> '; // Clear "답변 생성 중..."
+                botResponseDiv.innerHTML = '<strong>캠토리:</strong> '; // Clear "답변 생성 중..."
                 let i = 0;
-                const speed = 20; // Typing speed in milliseconds
+                const speed = 30; // Typing speed in milliseconds
 
                 function typeWriter() {
                     if (i < fullText.length) {
@@ -324,50 +333,54 @@
                         chatBox.scrollTop = chatBox.scrollHeight; // Keep scrolling as text appears
                         setTimeout(typeWriter, speed);
                     } else {
-                        // After typing is complete, proceed with other actions
-                        clearMap();
-
-                        console.log("Received locations:", data.locations);
-
-                        const routeList = document.getElementById("route-list");
-                        routeList.innerHTML = ''; // Clear previous locations
-
-                        data.locations.forEach((location, index) => {
-                            const listItem = document.createElement("li");
-                            listItem.id = `location-${index}`; // Assign a unique ID for updating later
-                            listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
-                            listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
-                            routeList.appendChild(listItem);
-
-                            // Add marker to map
-                            if (location.latitude && location.longitude) {
-                                const markerPosition = new Tmapv2.LatLng(location.latitude, location.longitude);
-                                const marker = new Tmapv2.Marker({
-                                    position: markerPosition,
-                                    map: map,
-                                    icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // Example icon
-                                    label: location.name
-                                });
-                                markers.push(marker);
-                            }
-                        });
-
-                        routeList.scrollTop = 0;
-
-                        if (data.locations.length > 0) {
-                            const firstLocation = data.locations[0];
-                            if (firstLocation.latitude && firstLocation.longitude) {
-                                map.setCenter(new Tmapv2.LatLng(firstLocation.latitude, firstLocation.longitude));
-                            }
-                        }
+                        // No more actions needed here after typing, as location logic is moved
                     }
                 }
+
+                // --- START: Moved location display logic here ---
+                clearMap();
+
+                console.log("Received locations:", data.locations);
+
+                const routeList = document.getElementById("route-list");
+                routeList.innerHTML = ''; // Clear previous locations
+
+                data.locations.forEach((location, index) => {
+                    const listItem = document.createElement("li");
+                    listItem.id = `location-${index}`; // Assign a unique ID for updating later
+                    listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
+                    listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
+                    routeList.appendChild(listItem);
+
+                    // Add marker to map
+                    if (location.latitude && location.longitude) {
+                        const markerPosition = new Tmapv2.LatLng(location.latitude, location.longitude);
+                        const marker = new Tmapv2.Marker({
+                            position: markerPosition,
+                            map: map,
+                            icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // Example icon
+                            label: location.name
+                        });
+                        markers.push(marker);
+                    }
+                });
+
+                routeList.scrollTop = 0;
+
+                if (data.locations.length > 0) {
+                    const firstLocation = data.locations[0];
+                    if (firstLocation.latitude && firstLocation.longitude) {
+                        map.setCenter(new Tmapv2.LatLng(firstLocation.latitude, firstLocation.longitude));
+                    }
+                }
+                // --- END: Moved location display logic here ---
+
                 typeWriter(); // Start the typing effect
             })
             .catch(error => {
                 console.error('Error:', error);
                 // If an error occurs, update the botResponseDiv with an error message
-                botResponseDiv.innerHTML = `<strong>캠핑전문가:</strong> 오류가 발생했습니다. 다시 시도해주세요.`;
+                botResponseDiv.innerHTML = `<strong>캠토리:</strong> 오류가 발생했습니다. 다시 시도해주세요.`;
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
         }
