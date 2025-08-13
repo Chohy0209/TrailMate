@@ -176,54 +176,111 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log("TMAP API Response:", JSON.stringify(data, null, 2)); // Log the full API response
+
                 if (data.error) {
                     console.error("TMAP Route Error:", data.error);
                     return;
                 }
 
-                // Draw traffic segments
-                if (data.traffic_segments && data.traffic_segments.length > 0) {
-                    data.traffic_segments.forEach(segment => {
-                        const path = segment.coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
-                        console.log(path);
-                        
-                        let color = "#006400"; // 기본 색상 (원활)
-                        const traffic = segment.traffic;
-                        
-                        if (traffic) {
-                            // TMAP API 교통정보: 0-원활, 1-서행, 2-지체, 3-정체, 4-정보없음
-                            switch (traffic.trafficIndex) {
-                                case 0: color = "#009900"; break; // 원활 (녹색)
-                                case 1: color = "#739900"; break; // 서행 (녹황색)
-                                case 2: color = "#FF8C00"; break; // 지체 (주황색)
-                                case 3: color = "#FF0000"; break; // 정체 (빨간색)
-                                default: color = "#808080"; // 정보없음 (회색)
-                            }
+                if (data.features && data.features.length > 0) {
+                    const routeList = document.getElementById("route-list");
+                    const waypoints = [];
+
+                    // Remove existing waypoint info
+                    const existingWaypoints = routeList.querySelector('.waypoints-info');
+                    if (existingWaypoints) {
+                        existingWaypoints.remove();
+                    }
+
+                    data.features.forEach(feature => {
+                        // Collect waypoints
+                        /*if (feature.geometry.type === "Point" && feature.properties.pointType === "G") {
+                            waypoints.push(feature.properties.name);
+                        }*/
+                        if (feature.type === "Feature" && [0, 1, 5, 6, 7].includes(feature.properties.roadType)) {
+                            waypoints.push(feature.properties.name);
                         }
 
-                        const polyline = new Tmapv2.Polyline({
-                            path: path,
-                            strokeColor: color,
-                            strokeWeight: 8,
-                            map: map
-                        });
-                        polylines.push(polyline);
-                    });
-                }
+                        console.log(`waypoints : ${waypoints}`);
 
-                // Update the list item with route details
-                const listItem = document.getElementById(listItemId);
-                if (listItem) {
-                    const timeInMinutes = Math.round(data.total_time / 60);
-                    const toll = data.total_toll.toLocaleString('ko-KR');
-                    
-                    listItem.innerHTML = `
-                        <strong>${endName}</strong><br>
-                        경로: ${data.route_summary}<br>
-                        시간: 약 ${timeInMinutes}분, 통행료: ${toll}원
-                    `;
+                        // Draw route segments with traffic colors
+                        if (feature.geometry.type === "LineString") {
+                            const coordinates = feature.geometry.coordinates;
+                            const trafficData = feature.geometry.traffic;
+
+                            if (trafficData && Array.isArray(trafficData)) {
+                                for (let i = 0; i < trafficData.length; i++) {
+                                    const trafficInfo = trafficData[i]; // Format: [startIndex, endIndex, congestion, speed]
+                                    
+                                    if (!Array.isArray(trafficInfo) || trafficInfo.length < 3) {
+                                        console.error("Traffic segment data is not in the expected format.", trafficInfo);
+                                        continue;
+                                    }
+
+                                    const fromNodeIdx = trafficInfo[0];
+                                    const toNodeIdx = trafficInfo[1];
+                                    const congestion = trafficInfo[2];
+
+                                    const segmentPath = [];
+                                    for (let j = fromNodeIdx; j <= toNodeIdx && j < coordinates.length; j++) {
+                                        segmentPath.push(new Tmapv2.LatLng(coordinates[j][1], coordinates[j][0]));
+                                    }
+
+                                    if (segmentPath.length < 2) continue;
+
+                                    const trafficColors = {
+                                        "1": "#009900", // 원활
+                                        "2": "#FFD400", // 서행
+                                        "3": "#FF8C00", // 지체
+                                        "4": "#FF0000"  // 정체
+                                    };
+
+                                    let color = trafficColors[congestion] || "#808080"; // Default to Red
+
+                                    const polyline = new Tmapv2.Polyline({
+                                        path: segmentPath,
+                                        strokeColor: color,
+                                        strokeWeight: 8,
+                                        map: map
+                                    });
+                                    polylines.push(polyline);
+                                }
+                            } else {
+                                // Fallback for no traffic data
+                                const path = coordinates.map(coord => new Tmapv2.LatLng(coord[1], coord[0]));
+                                const polyline = new Tmapv2.Polyline({
+                                    path: path,
+                                    strokeColor: "#808080",
+                                    strokeWeight: 6,
+                                    map: map
+                                });
+                                polylines.push(polyline);
+                            }
+                        }
+                    });
+
+                    // Update the main list item with total distance/time
+                    const listItem = document.getElementById(listItemId);
+                    const properties = data.features[0].properties;
+                    if (listItem && properties) {
+                        const timeInMinutes = Math.round(properties.totalTime / 60);
+                        const toll = properties.totalFare.toLocaleString('ko-KR');
+                        const distanceInKm = (properties.totalDistance / 1000).toFixed(1);
+
+                        let waypointsHTML = '';
+                        if (waypoints.length > 0) {
+                            waypointsHTML = `경유지: ${waypoints.join(" &rarr; ")}<br>`;
+                        }
+                        listItem.innerHTML = `
+                            <strong>${endName}</strong><br>
+                            ${waypointsHTML}
+                            거리: ${distanceInKm}km, 시간: 약 ${timeInMinutes}분, 통행료: ${toll}원
+                        `;
+                    }
                 }
-            // Update weather for the selected location
+                
+                // Update weather for the selected location
                 getWeatherAndDisplay(endLat, endLon);
             })
             .catch(error => console.error('Error fetching TMAP route:', error));
@@ -240,12 +297,21 @@
             chatBox.innerHTML += `<div class="message user"><strong>나:</strong> ${message}</div>`;
             userInput.value = "";
 
-            const loadingMessage = document.createElement('div');
-            loadingMessage.id = 'loading-message';
-            loadingMessage.className = 'message bot';
-            loadingMessage.innerHTML = '<strong>캠핑전문가:</strong> 답변 생성 중...';
-            chatBox.appendChild(loadingMessage);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            // 1. Add "답변 생성 중..." message for chat box
+            const botResponseDiv = document.createElement('div');
+            botResponseDiv.className = 'message bot';
+            botResponseDiv.innerHTML = '<strong>캠토리:</strong> 답변 생성 중...';
+            chatBox.appendChild(botResponseDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to show typing indicator
+
+            // Add "캠핑장 대기 중" message to route-list
+            const routeList = document.getElementById("route-list");
+            routeList.innerHTML = ''; // Clear previous locations before adding pending message
+            const pendingMessageItem = document.createElement('li');
+            pendingMessageItem.id = 'pending-camping-message';
+            pendingMessageItem.innerHTML = '캠핑장 검색 중...';
+            routeList.appendChild(pendingMessageItem);
+
 
             fetch("/chat", {
                 method: "POST",
@@ -254,31 +320,28 @@
             })
             .then(response => response.json())
             .then(data => {
-                loadingMessage.remove();
-
-                const botMessageContainer = document.createElement('div');
-                botMessageContainer.className = 'message bot';
-                botMessageContainer.innerHTML = '<strong>캠핑전문가:</strong> ';
-                chatBox.appendChild(botMessageContainer);
-
-                const answerSpan = document.createElement('span');
-                botMessageContainer.appendChild(answerSpan);
-
+                // 2. Implement typewriter effect
+                const fullText = data.answer;
+                botResponseDiv.innerHTML = '<strong>캠토리:</strong> '; // Clear "답변 생성 중..."
                 let i = 0;
+                const speed = 30; // Typing speed in milliseconds
+
                 function typeWriter() {
-                    if (i < data.answer.length) {
-                        answerSpan.innerHTML += data.answer.charAt(i);
+                    if (i < fullText.length) {
+                        botResponseDiv.innerHTML += fullText.charAt(i);
                         i++;
-                        setTimeout(typeWriter, 10);
-                        chatBox.scrollTop = chatBox.scrollHeight;
+                        chatBox.scrollTop = chatBox.scrollHeight; // Keep scrolling as text appears
+                        setTimeout(typeWriter, speed);
+                    } else {
+                        // No more actions needed here after typing, as location logic is moved
                     }
                 }
-                typeWriter();
 
+                // --- START: Moved location display logic here ---
                 clearMap();
 
                 console.log("Received locations:", data.locations);
-                
+
                 const routeList = document.getElementById("route-list");
                 routeList.innerHTML = ''; // Clear previous locations
 
@@ -299,25 +362,26 @@
                             label: location.name
                         });
                         markers.push(marker);
-                        // map.setCenter(markerPosition); // Removed from loop
                     }
-                }); // End of forEach loop
+                });
 
-                // Scroll the route list to the top to ensure first items are visible
                 routeList.scrollTop = 0;
 
-                // Set map center after all markers are added, to the first location or current center
                 if (data.locations.length > 0) {
                     const firstLocation = data.locations[0];
                     if (firstLocation.latitude && firstLocation.longitude) {
                         map.setCenter(new Tmapv2.LatLng(firstLocation.latitude, firstLocation.longitude));
                     }
                 }
+                // --- END: Moved location display logic here ---
+
+                typeWriter(); // Start the typing effect
             })
             .catch(error => {
-                loadingMessage.remove();
                 console.error('Error:', error);
-                chatBox.innerHTML += `<div class="message bot"><strong>캠핑전문가:</strong> 오류가 발생했습니다. 다시 시도해주세요.</div>`;
+                // If an error occurs, update the botResponseDiv with an error message
+                botResponseDiv.innerHTML = `<strong>캠토리:</strong> 오류가 발생했습니다. 다시 시도해주세요.`;
+                chatBox.scrollTop = chatBox.scrollHeight;
             });
         }
 
