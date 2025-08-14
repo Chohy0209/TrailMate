@@ -1,0 +1,292 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a237e 0%, #3949ab 30%, #5c6bc0 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.background-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.mountain {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+}
+
+.mountain-1 {
+    left: -10%;
+    border-left: 200px solid transparent;
+    border-right: 300px solid transparent;
+    border-bottom: 400px solid #1a1a4a;
+}
+
+.mountain-2 {
+    left: 20%;
+    border-left: 250px solid transparent;
+    border-right: 200px solid transparent;
+    border-bottom: 350px solid #2a2a5a;
+}
+
+.mountain-3 {
+    right: -10%;
+    border-left: 300px solid transparent;
+    border-right: 250px solid transparent;
+    border-bottom: 450px solid #1a1a4a;
+}
+
+.tree {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+}
+
+.tree-1 {
+    left: 15%;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 80px solid #0a3d0a;
+}
+
+.tree-2 {
+    left: 25%;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 60px solid #0a4d0a;
+}
+
+.tree-3 {
+    right: 30%;
+    border-left: 25px solid transparent;
+    border-right: 25px solid transparent;
+    border-bottom: 90px solid #0a3d0a;
+}
+
+.tree-4 {
+    right: 15%;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 75px solid #0a4d0a;
+}
+
+.star {
+    position: absolute;
+    color: #fff;
+}
+
+.star-1 { top: 10%; left: 20%; font-size: 20px; }
+.star-2 { top: 15%; right: 25%; font-size: 16px; }
+.star-3 { top: 25%; left: 60%; font-size: 14px; }
+.star-4 { top: 8%; left: 80%; font-size: 18px; }
+.star-5 { top: 30%; right: 10%; font-size: 12px; }
+.star-6 { top: 20%; left: 10%; font-size: 15px; }
+
+.moon {
+    position: absolute;
+    top: 15%;
+    right: 15%;
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    border-radius: 50%;
+}
+
+.clouds {
+    position: absolute;
+    top: 25%;
+    left: 45%;
+    width: 100px;
+    height: 40px;
+    background: #fff;
+    border-radius: 50px;
+}
+
+.clouds::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    width: 60px;
+    height: 30px;
+    background: #fff;
+    border-radius: 30px;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.mascot {
+    font-size: 80px;
+    margin-bottom: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.campfire {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.fire {
+    color: #ff6b35;
+    animation: flicker 1.5s infinite alternate;
+}
+
+@keyframes flicker {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+h1 {
+    font-size: 4rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.description {
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 40px;
+}
+
+.start-button {
+    background: linear-gradient(45deg, #4285f4, #34a853);
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 60px;
+    transition: all 0.3s ease;
+}
+
+.start-button:hover {
+    transform: translateY(-2px);
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.card-description {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2.5rem;
+    }
+    
+    .cards-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .container {
+        padding: 20px 15px;
+    }
+}
+
+.floating-particles {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    animation: float 6s infinite linear;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+}
+
+.particle-1 { left: 10%; animation-delay: -2s; }
+.particle-2 { left: 20%; animation-delay: -4s; }
+.particle-3 { left: 30%; animation-delay: -1s; }
+.particle-4 { left: 40%; animation-delay: -3s; }
+.particle-5 { left: 50%; animation-delay: -5s; }
+.particle-6 { left: 60%; animation-delay: -2.5s; }
+.particle-7 { left: 70%; animation-delay: -4.5s; }
+.particle-8 { left: 80%; animation-delay: -1.5s; }
+.particle-9 { left: 90%; animation-delay: -3.5s; }
