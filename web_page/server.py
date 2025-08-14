@@ -9,7 +9,7 @@ import requests
 load_dotenv()
 
 # model_gpt.py에서 main_app과 continuation_app을 임포트
-from model_gpt import main_app, continuation_app
+from model_gpt_naver import main_app, continuation_app
 
 app = Flask(__name__)
 # Flask 세션을 사용하기 위해 시크릿 키 설정
@@ -25,6 +25,9 @@ def index():
     session.clear()  # 새 방문 시 세션 초기화
     tmap_api_key = os.getenv("TMAP_API_KEY")
     openweathermap_api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    
+    print(f"tmap api : {tmap_api_key}, weather api : {openweathermap_api_key}")
+    
     return render_template("index.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
 
 @app.route("/get_tmap_route", methods=["POST"])
@@ -37,11 +40,13 @@ def get_tmap_route():
     if not all(k in data for k in ["startX", "startY", "endX", "endY"]):
         return jsonify({"error": "필수 파라미터가 누락되었습니다."}), 400
 
+    print(f"넘어 온 데이터 : {data}")
+
     tmap_api_key = os.getenv("TMAP_API_KEY")
     
     headers = {
         "appKey": tmap_api_key,
-        "Content-Type": "application/json"
+        "content-type": "application/json"
     }
     
     payload = {
@@ -54,6 +59,8 @@ def get_tmap_route():
         "searchOption": 0,  # 추천+실시간교통정보
         "trafficInfo": "Y"    # 실시간 교통정보 포함
     }
+    
+    print(f"payload : {payload}")
     
     url = "https://apis.openapi.sk.com/tmap/routes?version=1"
     

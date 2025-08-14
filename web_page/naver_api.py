@@ -28,7 +28,7 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
     raise RuntimeError("NAVER 키 없음: .env에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 설정 필요")
 
-CHROMA_DB_PATH = "camp_chroma_store"
+CHROMA_DB_PATH = "./data/camp_vectorDB"
 EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-large-instruct"
 NAVER_CONCURRENCY = 3
 _rate_sem = asyncio.Semaphore(NAVER_CONCURRENCY)

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE hthml>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -165,7 +165,7 @@
 
             fetch("/get_tmap_route", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "content-type": "application/json" },
                 body: JSON.stringify({
                     startX: userLocation.lon,
                     startY: userLocation.lat,
@@ -176,6 +176,8 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log(`user location : ${userLocation.lat}, ${userLocation.lon}`);
+                
                 console.log("TMAP API Response:", JSON.stringify(data, null, 2)); // Log the full API response
 
                 if (data.error) {
