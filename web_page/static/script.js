@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         messagesContainer.innerHTML = '<div class="message bot"><p>안녕하세요! 저는 캠토리입니다. 캠핑에 관한 모든 질문에 답해드릴게요! 어떤 도움이 필요하신가요? 😊</p></div>';
         clearMap();
         document.getElementById('route-list').innerHTML = '';
+        document.getElementById('map-and-list-container').style.display = 'none';
     });
 });
 
@@ -45,6 +46,8 @@ function sendMessage() {
     botResponseDiv.appendChild(botParagraph);
     chatBox.appendChild(botResponseDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    const markers = new Array();
 
     fetch("/chat", {
         method: "POST",
@@ -71,30 +74,42 @@ function sendMessage() {
 
         const routeList = document.getElementById("route-list");
         routeList.innerHTML = '';
+        
+        const mapAndListContainer = document.getElementById('map-and-list-container');
 
-        data.locations.forEach((location, index) => {
-            const listItem = document.createElement("li");
-            listItem.id = `location-${index}`;
-            listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
-            listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
-            routeList.appendChild(listItem);
+        if (data.locations && data.locations.length > 0) {
+            mapAndListContainer.style.display = 'block';
 
-            if (location.latitude && location.longitude) {
-                const markerPosition = new Tmapv2.LatLng(location.latitude, location.longitude);
-                const marker = new Tmapv2.Marker({
-                    position: markerPosition,
-                    map: map,
-                    label: location.name
-                });
-                markers.push(marker);
-            }
-        });
+            data.locations.forEach((location, index) => {
+                const listItem = document.createElement("li");
+                listItem.id = `location-${index}`;
+                listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
+                listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
+                routeList.appendChild(listItem);
 
-        if (data.locations.length > 0) {
+                if (location.latitude && location.longitude) {
+                    const markerPosition = new Tmapv2.LatLng(location.latitude, location.longitude);
+                    const marker = new Tmapv2.Marker({
+                        position: markerPosition,
+                        map: map,
+                        label: location.name,
+                        icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`)
+                    });
+                    markers.push(marker);
+                }
+            });
+
             const firstLocation = data.locations[0];
             if (firstLocation.latitude && firstLocation.longitude) {
                 map.setCenter(new Tmapv2.LatLng(firstLocation.latitude, firstLocation.longitude));
             }
+
+            if (map) {
+                map.resize();
+            }
+
+        } else {
+            mapAndListContainer.style.display = 'none';
         }
 
         typeWriter();

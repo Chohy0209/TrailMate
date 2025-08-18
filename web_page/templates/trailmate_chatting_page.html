@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="/static/chat.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
+    <style>
+        #map-and-list-container {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="chat-container">
@@ -33,7 +38,10 @@
             <div id="weather-info"></div>
             <div class="messages">
                 <div class="message bot">
-                    <p>안녕하세요! 저는 캠토리입니다. 캠핑에 관한 모든 질문에 답해드릴게요! 어떤 도움이 필요하신가요? 😊</p>
+                    <p>안녕하세요! 저는 캠토리입니다. <br><br>
+캠핑에 관한 모든 질문에 답해드릴게요! 캠핑 장소 추천, 장비 선택, 요리 레시피, 안전 수칙 등 무엇이든 편하게 물어보세요.
+<br><br>
+어떤 도움이 필요하신가요? 😊</p>
                 </div>
             </div>
             <footer class="chat-footer">
@@ -44,9 +52,9 @@
             </footer>
         </main>
 
-        <aside class="map-and-list-container">
+        <aside id="map-and-list-container" class="map-and-list-container">
             <div class="map-container">
-                <div id="map_div" style="width: 100%; height: 400px;"></div>
+                <div id="map_div" style="color: black; width: 100%; height: 400px;"></div>
             </div>
             <div id="route-list-container">
                 <ul id="route-list"></ul>
@@ -186,8 +194,11 @@
             polylines.forEach(polyline => polyline.setMap(null));
             polylines = [];
 
+            // Update weather for the selected location immediately
+            getWeatherAndDisplay(endLat, endLon);
+
             if (!userLocation) {
-                alert("현재 위치 정보가 없습니다.");
+                alert("현재 위치 정보가 없습니다. 경로를 표시할 수 없습니다.");
                 return;
             }
 
@@ -312,7 +323,7 @@
                 }
                 
                 // Update weather for the selected location
-                getWeatherAndDisplay(endLat, endLon);
+                
             })
             .catch(error => console.error('Error fetching TMAP route:', error));
         }
