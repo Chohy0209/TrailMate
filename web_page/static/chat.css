@@ -186,6 +186,7 @@ body {
     color: #B9BBBE;
     height: 240px;
     overflow-y: auto;
+    flex-shrink: 0; /* 추가: 이 요소가 줄어들지 않도록 설정 */
 }
 
 #route-list-container {

@@ -39,16 +39,21 @@ def index():
     
     return render_template("trailmate_main_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
 
-@app.route("/camptory_chat")
+@app.route("/camptory_chat", methods=["GET", "POST"])
 def camptory_chat():
     """
     채팅 페이지를 렌더링합니다.
     TMAP API 키를 템플릿에 전달합니다.
+    POST 요청 시 메시지를 받아 템플릿에 전달합니다.
     """
     tmap_api_key = os.getenv("TMAP_API_KEY")
     openweathermap_api_key = os.getenv("OPENWEATHERMAP_API_KEY")
     
-    return render_template("trailmate_chatting_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
+    initial_message = None
+    if request.method == "POST":
+        initial_message = request.form.get("message")
+        
+    return render_template("trailmate_chatting_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key, initial_message=initial_message)
 
 @app.route("/get_tmap_route", methods=["POST"])
 def get_tmap_route():

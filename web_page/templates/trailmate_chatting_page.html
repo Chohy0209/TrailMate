@@ -17,6 +17,7 @@
                 <button onclick='location.href="/"' class="back-to-home-btn">홈으로 돌아가기</button>
             </div>
             <div class="sidebar-content">
+                <p>최근대화</p>
             </div>
             <div class="sidebar-footer">
                 <a href="#">설정</a>
@@ -320,11 +321,10 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const message = urlParams.get('message');
-            if (message) {
+            const initialMessage = {{ initial_message|tojson|safe }};
+            if (initialMessage) {
                 const chatInput = document.getElementById('chat-input');
-                chatInput.value = message;
+                chatInput.value = initialMessage;
                 sendMessage();
             }
         });

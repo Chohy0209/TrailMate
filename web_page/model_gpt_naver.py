@@ -61,8 +61,8 @@ def oai_text(prompt: str, model: str = GPT_MODEL) -> Dict[str, Any]:
 # ===== 임베딩 및 DB 로딩 =====
 print("--- 임베딩 모델 및 ChromaDB 로딩 중 ---")
 start_time = time.perf_counter()
-embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-vectordb = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=embeddings)
+embeddings = HuggingFaceEmbeddings(model_name = EMBEDDING_MODEL_NAME)
+vectordb = Chroma(persist_directory = CHROMA_DB_PATH, embedding_function = embeddings)
 end_time = time.perf_counter()
 print(f"--- 로딩 완료 (소요 시간: {end_time - start_time:.2f}초) ---")
 
