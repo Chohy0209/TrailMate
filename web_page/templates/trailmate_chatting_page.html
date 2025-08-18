@@ -1,38 +1,60 @@
-<!DOCTYPE hthml>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>캠토리(Camptory)</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrailMate - 채팅</title>
+    <link rel="stylesheet" href="/static/base.css">
+    <link rel="stylesheet" href="/static/chat.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
 </head>
 <body>
-    <h2 class="main-title">
-        지금 나만의 캠핑
-        <label class="switch">
-            <input type="checkbox" id="darkModeToggle">
-            <span class="slider round"></span>
-        </label>
-    </h2>
-    <div class="container">
-        
-        <div class="map-and-list-container">
+    <div class="chat-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn">+ 새 대화 시작</button>
+                <button onclick='location.href="/"' class="back-to-home-btn">홈으로 돌아가기</button>
+            </div>
+            <div class="sidebar-content">
+                <p>최근대화</p>
+            </div>
+            <div class="sidebar-footer">
+                <a href="#">설정</a>
+                <a href="#">도움말</a>
+            </div>
+        </aside>
+
+        <main class="chat-area">
+            <header class="chat-header">
+                <h2><img src="/static/squirrel.png" width="30px" height="30px"> 캠토리</h2>
+                <p>캠핑 전문가 AI 어시스턴트</p>
+            </header>
             <div id="weather-info"></div>
+            <div class="messages">
+                <div class="message bot">
+                    <p>안녕하세요! 저는 캠토리입니다. 캠핑에 관한 모든 질문에 답해드릴게요! 어떤 도움이 필요하신가요? 😊</p>
+                </div>
+            </div>
+            <footer class="chat-footer">
+                <form id="chat-form" class="chat-input-form">
+                    <input type="text" id="chat-input" placeholder="궁금한 점을 물어보세요...">
+                    <button type="submit">전송</button>
+                </form>
+            </footer>
+        </main>
+
+        <aside class="map-and-list-container">
             <div class="map-container">
-                <div id="map_div"></div>
+                <div id="map_div" style="width: 100%; height: 400px;"></div>
             </div>
             <div id="route-list-container">
                 <ul id="route-list"></ul>
             </div>
-        </div>
-        <div class="chat-container">
-            
-            <div id="chat-box"></div>
-            <textarea id="user-input" rows="3" placeholder="궁금한 캠핑 정보를 물어보세요!"></textarea>
-            <!--<button onclick="sendMessage()">전송</button>-->
-        </div>
+        </aside>
     </div>
 
+    <script src="/static/script.js"></script>
     <script>
         let userLocation;
         let map;
@@ -47,8 +69,9 @@
             fetch(weatherUrl)
                 .then(response => response.json())
                 .then(data => {
+                    const weatherInfoDiv = document.getElementById('weather-info');
                     if (data.list && data.list.length > 0) {
-                        let forecastHtml = `<h3>${data["city"]["name"]} 날씨 예보</h3>`;
+                        let forecastHtml = `<h3>${data["city"]["name"]} 날씨 예보</h3><div class="weather-forecast-container">`;
                         const dailyForecasts = {};
 
                         data.list.forEach(item => {
@@ -73,7 +96,6 @@
                         for (const day in dailyForecasts) {
                             const temps = dailyForecasts[day].temps;
                             const avgTemp = (temps.reduce((sum, t) => sum + t, 0) / temps.length).toFixed(1);
-                            // Get most frequent description and icon for the day
                             const mostFrequentDescription = dailyForecasts[day].descriptions.sort((a,b) =>
                                 dailyForecasts[day].descriptions.filter(v => v===a).length -
                                 dailyForecasts[day].descriptions.filter(v => v===b).length
@@ -84,12 +106,18 @@
                             ).pop();
 
                             forecastHtml += `
-                                <p><strong>${day}</strong>: <br>${mostFrequentDescription} ${avgTemp}°C <img src="http://openweathermap.org/img/w/${mostFrequentIcon}.png" alt="${mostFrequentDescription}"></p>
+                                <div class="weather-day">
+                                    <strong>${day}</strong><br>
+                                    <img src="http://openweathermap.org/img/w/${mostFrequentIcon}.png" alt="${mostFrequentDescription}"><br>
+                                    ${mostFrequentDescription}<br>
+                                    ${avgTemp}°C
+                                </div>
                             `;
                         }
-                        document.getElementById('weather-info').innerHTML = forecastHtml;
+                        forecastHtml += `</div>`;
+                        weatherInfoDiv.innerHTML = forecastHtml;
                     } else {
-                        document.getElementById('weather-info').innerHTML = `<p>날씨 예보를 불러올 수 없습니다.</p>`;
+                        weatherInfoDiv.innerHTML = `<p>날씨 예보를 불러올 수 없습니다.</p>`;
                     }
                 })
                 .catch(error => {
@@ -270,10 +298,11 @@
                         const toll = properties.totalFare.toLocaleString('ko-KR');
                         const distanceInKm = (properties.totalDistance / 1000).toFixed(1);
 
-                        let waypointsHTML = '';
-                        if (waypoints.length > 0) {
-                            waypointsHTML = `경유지: ${waypoints.join(" &rarr; ")}<br>`;
-                        }
+                        //let waypointsHTML = '';
+                        //if (waypoints.length > 0) {
+                        //    waypointsHTML = `경유지: ${waypoints.join(" &rarr; ")}<br>`;
+                        //}
+
                         listItem.innerHTML = `
                             <strong>${endName}</strong><br>
                             ${waypointsHTML}
@@ -288,147 +317,15 @@
             .catch(error => console.error('Error fetching TMAP route:', error));
         }
 
-
-
-        function sendMessage() {
-            const userInput = document.getElementById("user-input");
-            const message = userInput.value.trim();
-            if (!message) return;
-
-            const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML += `<div class="message user"><strong>나:</strong> ${message}</div>`;
-            userInput.value = "";
-
-            // 1. Add "답변 생성 중..." message for chat box
-            const botResponseDiv = document.createElement('div');
-            botResponseDiv.className = 'message bot';
-            botResponseDiv.innerHTML = '<strong>캠토리:</strong> 답변 생성 중...';
-            chatBox.appendChild(botResponseDiv);
-            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to show typing indicator
-
-            // Add "캠핑장 대기 중" message to route-list
-            const routeList = document.getElementById("route-list");
-            routeList.innerHTML = ''; // Clear previous locations before adding pending message
-            const pendingMessageItem = document.createElement('li');
-            pendingMessageItem.id = 'pending-camping-message';
-            pendingMessageItem.innerHTML = '캠핑장 검색 중...';
-            routeList.appendChild(pendingMessageItem);
-
-
-            fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // 2. Implement typewriter effect
-                const fullText = data.answer;
-                botResponseDiv.innerHTML = '<strong>캠토리:</strong> '; // Clear "답변 생성 중..."
-                let i = 0;
-                const speed = 30; // Typing speed in milliseconds
-
-                function typeWriter() {
-                    if (i < fullText.length) {
-                        botResponseDiv.innerHTML += fullText.charAt(i);
-                        i++;
-                        chatBox.scrollTop = chatBox.scrollHeight; // Keep scrolling as text appears
-                        setTimeout(typeWriter, speed);
-                    } else {
-                        // No more actions needed here after typing, as location logic is moved
-                    }
-                }
-
-                // --- START: Moved location display logic here ---
-                clearMap();
-
-                console.log("Received locations:", data.locations);
-
-                const routeList = document.getElementById("route-list");
-                routeList.innerHTML = ''; // Clear previous locations
-
-                data.locations.forEach((location, index) => {
-                    const listItem = document.createElement("li");
-                    listItem.id = `location-${index}`; // Assign a unique ID for updating later
-                    listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
-                    listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
-                    routeList.appendChild(listItem);
-
-                    // Add marker to map
-                    if (location.latitude && location.longitude) {
-                        const markerPosition = new Tmapv2.LatLng(location.latitude, location.longitude);
-                        const marker = new Tmapv2.Marker({
-                            position: markerPosition,
-                            map: map,
-                            icon: Tmapv2.asset.Icon.get(`b_m_${index+1}`), // Example icon
-                            label: location.name
-                        });
-                        markers.push(marker);
-                    }
-                });
-
-                routeList.scrollTop = 0;
-
-                if (data.locations.length > 0) {
-                    const firstLocation = data.locations[0];
-                    if (firstLocation.latitude && firstLocation.longitude) {
-                        map.setCenter(new Tmapv2.LatLng(firstLocation.latitude, firstLocation.longitude));
-                    }
-                }
-                // --- END: Moved location display logic here ---
-
-                typeWriter(); // Start the typing effect
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // If an error occurs, update the botResponseDiv with an error message
-                botResponseDiv.innerHTML = `<strong>캠토리:</strong> 오류가 발생했습니다. 다시 시도해주세요.`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            });
-        }
-
-        document.getElementById("user-input").addEventListener("keydown", function(event) {
-            // Shift + Enter는 줄바꿈을 허용하고, Enter만 눌렀을 때 메시지를 전송합니다.
-            if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault(); // Enter 키의 기본 동작(줄바꿈)을 방지합니다.
-                sendMessage();
-            }
-        });
-
         window.onload = initTmap;
-
-        // Dark Mode Toggle Logic
-        const darkModeToggle = document.getElementById('darkModeToggle'); // This is now the checkbox input
-        const body = document.body;
-
-        // Function to apply theme
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                body.classList.add('dark-mode');
-                darkModeToggle.checked = true; // Set checkbox to checked
-            } else {
-                body.classList.remove('dark-mode');
-                darkModeToggle.checked = false; // Set checkbox to unchecked
-            }
-        }
-
-        // Check for saved theme preference on load
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            applyTheme(savedTheme);
-        } else {
-            // Default to light mode if no preference saved
-            applyTheme('light');
-        }
-
-        // Toggle theme on checkbox change
-        darkModeToggle.addEventListener('change', () => { // Changed from 'click' to 'change'
-            if (darkModeToggle.checked) { // Check if checkbox is checked
-                applyTheme('dark');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                applyTheme('light');
-                localStorage.setItem('theme', 'light');
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialMessage = {{ initial_message|tojson|safe }};
+            if (initialMessage) {
+                const chatInput = document.getElementById('chat-input');
+                chatInput.value = initialMessage;
+                sendMessage();
             }
         });
     </script>

@@ -1,0 +1,253 @@
+body {
+    background-image: url("./front_background.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0); /* 어두운 오버레이 */
+}
+
+header .logo img {
+    width: 80px;
+    margin-bottom: 10px;
+}
+
+header h1 {
+    font-size: 3rem;
+    margin: 0;
+    color: #ffffff;
+}
+
+header p {
+    font-size: 1.2rem;
+    margin-top: 10px;
+    color: #ffffff;
+}
+
+.cta-button {
+    background-color: #5A8DFF;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 40px 0;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.cta-button:hover {
+    background-color: #4a78e0;
+    transform: translateY(-2px);
+}
+
+.features {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+}
+
+.feature-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 30px;
+    width: 250px;
+    text-align: left;
+    transition: transform 0.3s, background-color 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.feature-card .icon {
+    font-size: 1.5rem;
+    font-weight: bold;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.feature-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.3rem;
+}
+
+.feature-card p {
+    margin: 0;
+    font-size: 1rem;
+    color: #cccccc;
+}
+
+footer {
+    margin-top: 40px;
+    font-size: 0.9rem;
+    color: #dddddd;
+}
+
+.background-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.mountain {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    opacity: 0.3;
+}
+
+.mountain-1 {
+    left: -10%;
+    border-left: 200px solid transparent;
+    border-right: 300px solid transparent;
+    border-bottom: 400px solid #1a1a4a;
+}
+
+.mountain-2 {
+    left: 20%;
+    border-left: 250px solid transparent;
+    border-right: 200px solid transparent;
+    border-bottom: 350px solid #2a2a5a;
+}
+
+.mountain-3 {
+    right: -10%;
+    border-left: 300px solid transparent;
+    border-right: 250px solid transparent;
+    border-bottom: 450px solid #1a1a4a;
+}
+
+.tree {
+    position: absolute;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    opacity: 0.4;
+}
+
+.tree-1 {
+    left: 15%;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 80px solid #0a3d0a;
+}
+
+.tree-2 {
+    left: 25%;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 60px solid #0a4d0a;
+}
+
+.tree-3 {
+    right: 30%;
+    border-left: 25px solid transparent;
+    border-right: 25px solid transparent;
+    border-bottom: 90px solid #0a3d0a;
+}
+
+.tree-4 {
+    right: 15%;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 75px solid #0a4d0a;
+}
+
+.star {
+    position: absolute;
+    color: #fff;
+    opacity: 0.7;
+    animation: twinkle 3s infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.3; }
+}
+
+.star-1 { top: 10%; left: 20%; font-size: 20px; }
+.star-2 { top: 15%; right: 25%; font-size: 16px; }
+.star-3 { top: 25%; left: 60%; font-size: 14px; }
+.star-4 { top: 8%; left: 80%; font-size: 18px; }
+.star-5 { top: 30%; right: 10%; font-size: 12px; }
+.star-6 { top: 20%; left: 10%; font-size: 15px; }
+
+.moon {
+    position: absolute;
+    top: 15%;
+    right: 15%;
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.8;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.clouds {
+    position: absolute;
+    top: 25%;
+    left: 45%;
+    width: 100px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    opacity: 0.6;
+}
+
+.clouds::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    width: 60px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.mascot {
+    font-size: 80px;
+    margin-bottom: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.campfire {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+}

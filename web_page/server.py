@@ -8,8 +8,17 @@ import requests
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 
-# model_gpt.py에서 main_app과 continuation_app을 임포트
-from model_gpt_naver import main_app, continuation_app
+DEBUG = True
+
+if DEBUG:
+    print("loading local model")
+    from filterrag_lang import main_app, continuation_app
+
+else:
+    # model_gpt.py에서 main_app과 continuation_app을 임포트
+    print("loading gpt model")
+    from model_gpt_naver import main_app, continuation_app
+    
 
 app = Flask(__name__)
 # Flask 세션을 사용하기 위해 시크릿 키 설정
@@ -28,7 +37,23 @@ def index():
     
     print(f"tmap api : {tmap_api_key}, weather api : {openweathermap_api_key}")
     
-    return render_template("index.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
+    return render_template("trailmate_main_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
+
+@app.route("/camptory_chat", methods=["GET", "POST"])
+def camptory_chat():
+    """
+    채팅 페이지를 렌더링합니다.
+    TMAP API 키를 템플릿에 전달합니다.
+    POST 요청 시 메시지를 받아 템플릿에 전달합니다.
+    """
+    tmap_api_key = os.getenv("TMAP_API_KEY")
+    openweathermap_api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+    
+    initial_message = None
+    if request.method == "POST":
+        initial_message = request.form.get("message")
+        
+    return render_template("trailmate_chatting_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key, initial_message=initial_message)
 
 @app.route("/get_tmap_route", methods=["POST"])
 def get_tmap_route():
