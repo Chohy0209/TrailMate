@@ -8,7 +8,7 @@ import requests
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     print("loading local model")
@@ -17,7 +17,7 @@ if DEBUG:
 else:
     # model_gpt.py에서 main_app과 continuation_app을 임포트
     print("loading gpt model")
-    from model_gpt_naver import main_app, continuation_app
+    from bge_new import main_app, continuation_app
     
 
 app = Flask(__name__)
@@ -35,7 +35,7 @@ def index():
     tmap_api_key = os.getenv("TMAP_API_KEY")
     openweathermap_api_key = os.getenv("OPENWEATHERMAP_API_KEY")
     
-    print(f"tmap api : {tmap_api_key}, weather api : {openweathermap_api_key}")
+    # print(f"tmap api : {tmap_api_key}, weather api : {openweathermap_api_key}")
     
     return render_template("trailmate_main_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
 
@@ -62,10 +62,11 @@ def get_tmap_route():
     요청 본문에서 출발지와 목적지 좌표를 받아 처리합니다.
     """
     data = request.get_json()
+    
+    print(f"넘어 온 데이터 : {data} \n")
+    
     if not all(k in data for k in ["startX", "startY", "endX", "endY"]):
         return jsonify({"error": "필수 파라미터가 누락되었습니다."}), 400
-
-    print(f"넘어 온 데이터 : {data}")
 
     tmap_api_key = os.getenv("TMAP_API_KEY")
     
@@ -97,13 +98,13 @@ def get_tmap_route():
         return jsonify(route_data)
 
     except requests.exceptions.RequestException as e:
-        print(f"TMAP API 요청 오류: {e}")
+        print(f"TMAP API 요청 오류: {e} \n")
         return jsonify({"error": "TMAP API 연동 중 오류가 발생했습니다."}), 502
     except (IndexError, KeyError) as e:
-        print(f"경로 데이터 파싱 오류: {e}")
+        print(f"경로 데이터 파싱 오류: {e} \n")
         return jsonify({"error": "TMAP API 응답 데이터를 처리하는 중 오류가 발생했습니다."}), 500
     except Exception as e:
-        print(f"경로 데이터 처리 오류: {e}")
+        print(f"경로 데이터 처리 오류: {e} \n")
         return jsonify({"error": "경로 데이터를 처리하는 중 내부 오류가 발생했습니다."}), 500
 
 @app.route("/chat", methods=["POST"])
@@ -155,22 +156,23 @@ async def chat():
         
         # Debugging: Log locations received from model_gpt.py
         raw_locations_from_model = result.get("locations", [])
-        print(f"[DEBUG] server.py: model_gpt.py로부터 받은 raw locations: {raw_locations_from_model}")
+        print(f"[DEBUG] server.py: model_gpt.py로부터 받은 raw locations: {raw_locations_from_model} \n")
 
         locations = raw_locations_from_model
 
-        # Ensure locations is a list and contains unique items if necessary
-        # This part is crucial for preventing frontend duplication if backend sends duplicates
+        # Filter out locations without a name first
+        named_locations = [loc for loc in locations if loc.get('name')]
+
         unique_locations = []
         seen_names = set()
-        for loc in locations:
+        for loc in named_locations:
             if loc.get('name') not in seen_names:
                 unique_locations.append(loc)
                 seen_names.add(loc.get('name'))
         locations = unique_locations
         
         # Debugging: Log final locations sent to frontend
-        print(f"[DEBUG] server.py: frontend로 보낼 최종 locations (중복 제거 후): {locations}")
+        print(f"[DEBUG] server.py: frontend로 보낼 최종 locations (중복 제거 후): {locations} \n")
 
         return jsonify({
             "answer": final_answer,
@@ -178,7 +180,7 @@ async def chat():
         })
 
     except Exception as e:
-        print(f"LangGraph 호출 오류: {e}")
+        print(f"chat - LangGraph 호출 오류: {e} \n")
         session.clear()  # 오류 발생 시 세션 초기화
         return jsonify({"answer": "죄송합니다. 처리 중 오류가 발생했습니다.", "locations": []}), 500
 

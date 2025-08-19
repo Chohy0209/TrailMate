@@ -28,8 +28,8 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
     raise RuntimeError("NAVER 키 없음: .env에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 설정 필요")
 
-CHROMA_DB_PATH = "./data/camp_vectorDB"
-EMBEDDING_MODEL_NAME = "intfloat/multilingual-e5-large-instruct"
+CHROMA_DB_PATH = "./camp_vectorDB_BGE_sentence_per_doc"
+EMBEDDING_MODEL_NAME = "dragonkue/BGE-m3-ko"
 NAVER_CONCURRENCY = 3
 _rate_sem = asyncio.Semaphore(NAVER_CONCURRENCY)
 
@@ -266,6 +266,8 @@ async def fetch_single_best_with_content_per_doc(
         base_query = f"{camp_name} {camp_addr}".strip()
         local_dt = _latest_modified_from_meta(meta)
 
+        print(f"\n[DEBUG] 캠핑장: {camp_name} | 주소: {camp_addr} | 로컬 수정일: {local_dt}")
+
         # sim 정렬 수집
         tasks = [
             naver_search_api(base_query, "blog",        display=per_type_display, sort="sim"),
@@ -279,7 +281,7 @@ async def fetch_single_best_with_content_per_doc(
                 print(f"네이버 오류[{camp_name}]: {p}")
                 continue
             merged.extend(p)
-
+        print(f"[DEBUG] {camp_name} 후보 총 {len(merged)}개 수집")
         # 후보 정리: 날짜 없는 항목 제거
         merged = [it for it in merged if _item_datetime(it) is not None]
 
@@ -287,6 +289,7 @@ async def fetch_single_best_with_content_per_doc(
         if enforce_name_in_title:
             nm = camp_name
             merged = [it for it in merged if nm in _normalize(it.get("title", ""))]
+            print(f"[DEBUG] {camp_name} 날짜 있는 후보: {len(merged)}개")
 
         # 최신순
         merged.sort(key=lambda it: _item_datetime(it), reverse=True)
@@ -299,6 +302,7 @@ async def fetch_single_best_with_content_per_doc(
             return (web_dt and web_dt > local_dt)
 
         candidates = [it for it in merged if _is_fresh(it)]
+        print(f"[DEBUG] {camp_name} 날짜 필터 통과 후보: {len(candidates)}개")
 
         # 본문 파싱 성공하는 첫 글만 채택
         picked = None
@@ -315,12 +319,19 @@ async def fetch_single_best_with_content_per_doc(
                 results.append(it)
                 seen_links.add(link)
                 picked = it
+                print(f"[DEBUG] {camp_name} 본문 파싱 성공: {link} | 길이: {len(content)}")
                 break  # 문서당 1개만
+            else:
+                print(f"[DEBUG] {camp_name} 본문 파싱 실패: {link}")
 
-        # 이 문서에서 본문 성공 글이 하나도 없으면 그냥 스킵(아무것도 추가 안 함)
+                 # 이 문서에서 본문 성공 글이 하나도 없으면 그냥 스킵(아무것도 추가 안 함)
+        if not picked:
+             print(f"[DEBUG] {camp_name} 본문 파싱 성공 글 없음")
+       
 
     # 전체 결과는 최신순 정렬
     results.sort(key=lambda x: _item_datetime(x), reverse=True)
+    print(f"[DEBUG] 최종 선택된 글 개수: {len(results)}\n")
     return results
 
 # -----------------------------

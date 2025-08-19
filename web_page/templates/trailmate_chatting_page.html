@@ -8,6 +8,111 @@
     <link rel="stylesheet" href="/static/chat.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey={{ tmap_api_key }}"></script>
+    <style>
+        #map-and-list-container {
+            display: none;
+        }
+
+        /* Dark Mode Toggle Switch */
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .dark-mode-toggle input[type="checkbox"] {
+            display: none;
+        }
+
+        .dark-mode-toggle label {
+            cursor: pointer;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+            background-color: #40444B;
+            border-radius: 25px;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+
+        .dark-mode-toggle label::after {
+            content: '';
+            position: absolute;
+            width: 21px;
+            height: 21px;
+            border-radius: 50%;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .dark-mode-toggle input[type="checkbox"]:checked + label {
+            background-color: #5865F2;
+        }
+
+        .dark-mode-toggle input[type="checkbox"]:checked + label::after {
+            transform: translateX(25px);
+        }
+
+        /* Dark & Light Mode Theme */
+        body.dark-mode {
+            background-color: #313338;
+            color: #ffffff;
+        }
+
+        body:not(.dark-mode) {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        .dark-mode .sidebar { background-color: #2B2D31; border-right-color: #2A2B2F; }
+        .dark-mode .sidebar-header .back-to-home-btn { background-color: #40444B; color: white; }
+        .dark-mode .sidebar-content p { color: #B9BBBE; }
+        .dark-mode .sidebar-content a { color: #B9BBBE; }
+        .dark-mode .sidebar-content a:hover { background-color: #383A40; color: #ffffff; }
+        .dark-mode .sidebar-footer { border-top-color: #2A2B2F; }
+        .dark-mode .sidebar-footer a { color: #B9BBBE; }
+        .dark-mode .chat-area { background-color: #313338; }
+        .dark-mode .chat-header { border-bottom-color: #2A2B2F; }
+        .dark-mode .chat-header h2 { color: #ffffff; }
+        .dark-mode .chat-header p { color: #B9BBBE; }
+        .dark-mode .message.bot { background-color: #383A40; color: #EAEAEA; }
+        .dark-mode .message.user { background-color: #5865F2; color: white; }
+        .dark-mode .chat-footer { border-top-color: #2A2B2F; }
+        .dark-mode .chat-input-form input { background-color: #40444B; color: white; }
+        .dark-mode .map-and-list-container { border-left-color: #2A2B2F; }
+        .dark-mode .map-container { background-color: #2B2D31; }
+        .dark-mode #weather-info { background-color: #2B2D31; border-bottom-color: #2A2B2F; color: #B9BBBE; }
+        .dark-mode #route-list-container { background-color: #2B2D31; }
+        .dark-mode #route-list li { background-color: #383A40; color: #EAEAEA; }
+        .dark-mode #route-list li:hover { background-color: #40444B; }
+        .dark-mode .weather-day { background-color: #383A40; }
+
+
+        body:not(.dark-mode) .sidebar { background-color: #F2F3F5; border-right-color: #E0E0E0; }
+        body:not(.dark-mode) .sidebar-header .back-to-home-btn { background-color: #E9EAED; color: #000; }
+        body:not(.dark-mode) .sidebar-content p { color: #4F5660; }
+        body:not(.dark-mode) .sidebar-content a { color: #4F5660; }
+        body:not(.dark-mode) .sidebar-content a:hover { background-color: #E0E0E0; color: #000; }
+        body:not(.dark-mode) .sidebar-footer { border-top-color: #E0E0E0; }
+        body:not(.dark-mode) .sidebar-footer a { color: #4F5660; }
+        body:not(.dark-mode) .chat-area { background-color: #FFFFFF; }
+        body:not(.dark-mode) .chat-header { border-bottom-color: #E0E0E0; }
+        body:not(.dark-mode) .chat-header h2 { color: #000000; }
+        body:not(.dark-mode) .chat-header p { color: #4F5660; }
+        body:not(.dark-mode) .message.bot { background-color: #F2F3F5; color: #000000; }
+        body:not(.dark-mode) .message.user { background-color: #5865F2; color: white; }
+        body:not(.dark-mode) .chat-footer { border-top-color: #E0E0E0; }
+        body:not(.dark-mode) .chat-input-form input { background-color: #E9EAED; color: #000; }
+        body:not(.dark-mode) .map-and-list-container { border-left-color: #E0E0E0; }
+        body:not(.dark-mode) .map-container { background-color: #F2F3F5; }
+        body:not(.dark-mode) #weather-info { background-color: #F2F3F5; border-bottom-color: #E0E0E0; color: #4F5660; }
+        body:not(.dark-mode) #route-list-container { background-color: #F2F3F5; }
+        body:not(.dark-mode) #route-list li { background-color: #E9EAED; color: #000000; }
+        body:not(.dark-mode) #route-list li:hover { background-color: #E0E0E0; }
+        body:not(.dark-mode) .weather-day { background-color: #E9EAED; }
+    </style>
 </head>
 <body>
     <div class="chat-container">
@@ -29,11 +134,18 @@
             <header class="chat-header">
                 <h2><img src="/static/squirrel.png" width="30px" height="30px"> 캠토리</h2>
                 <p>캠핑 전문가 AI 어시스턴트</p>
+                <div class="dark-mode-toggle">
+                    <input type="checkbox" id="dark-mode-switch"/>
+                    <label for="dark-mode-switch"></label>
+                </div>
             </header>
             <div id="weather-info"></div>
             <div class="messages">
                 <div class="message bot">
-                    <p>안녕하세요! 저는 캠토리입니다. 캠핑에 관한 모든 질문에 답해드릴게요! 어떤 도움이 필요하신가요? 😊</p>
+                    <p>안녕하세요! 저는 캠토리입니다. <br><br>
+캠핑에 관한 모든 질문에 답해드릴게요! 캠핑 장소 추천, 장비 선택, 요리 레시피, 안전 수칙 등 무엇이든 편하게 물어보세요.
+<br><br>
+어떤 도움이 필요하신가요? 😊</p>
                 </div>
             </div>
             <footer class="chat-footer">
@@ -44,9 +156,9 @@
             </footer>
         </main>
 
-        <aside class="map-and-list-container">
+        <aside id="map-and-list-container" class="map-and-list-container">
             <div class="map-container">
-                <div id="map_div" style="width: 100%; height: 400px;"></div>
+                <div id="map_div" style="color: black; width: 100%; height: 400px;"></div>
             </div>
             <div id="route-list-container">
                 <ul id="route-list"></ul>
@@ -186,8 +298,11 @@
             polylines.forEach(polyline => polyline.setMap(null));
             polylines = [];
 
+            // Update weather for the selected location immediately
+            getWeatherAndDisplay(endLat, endLon);
+
             if (!userLocation) {
-                alert("현재 위치 정보가 없습니다.");
+                alert("현재 위치 정보가 없습니다. 경로를 표시할 수 없습니다.");
                 return;
             }
 
@@ -312,7 +427,7 @@
                 }
                 
                 // Update weather for the selected location
-                getWeatherAndDisplay(endLat, endLon);
+                
             })
             .catch(error => console.error('Error fetching TMAP route:', error));
         }
@@ -326,6 +441,30 @@
                 const chatInput = document.getElementById('chat-input');
                 chatInput.value = initialMessage;
                 sendMessage();
+            }
+        });
+
+        const darkModeSwitch = document.getElementById('dark-mode-switch');
+        const body = document.body;
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            body.classList.add('dark-mode');
+            darkModeSwitch.checked = true;
+        } else {
+            // By default, enable dark mode if no preference is set
+            body.classList.add('dark-mode');
+            darkModeSwitch.checked = true;
+            localStorage.setItem('darkMode', 'enabled');
+        }
+
+        darkModeSwitch.addEventListener('change', () => {
+            if (darkModeSwitch.checked) {
+                body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
             }
         });
     </script>
