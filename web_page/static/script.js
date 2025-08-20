@@ -135,7 +135,7 @@ function sendMessage() {
 
                     // 지도 중앙으로 이동
                     map.setCenter(new Tmapv2.LatLng(location.latitude, location.longitude));
-                    map.setZoom(15);
+                    // map.setZoom(15);
                 };
                 routeList.appendChild(listItem);
 
