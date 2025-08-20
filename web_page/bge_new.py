@@ -36,7 +36,7 @@ client = OpenAI(
 )
 
 EMBEDDING_MODEL_NAME = "dragonkue/BGE-m3-ko"
-CHROMA_DB_PATH = "camp_vectorDB_BGE_sentence_per_doc"
+CHROMA_DB_PATH = "./data/camp_vectorDB_BGE_sentence_per_doc"
 MAX_LOOPS = 2
 
 GPT_MODEL = "ft:gpt-4.1-mini-2025-04-14:ailab:camping-rag-qa:C2bHhwJM:ckpt-step-714"
@@ -199,6 +199,7 @@ def generate_general_answer(state: GraphState) -> dict:
     prompt = (
         "당신은 캠핑 전문가입니다. 다음 캠핑 관련 질문에 답변해주세요.\n\n"
         f"질문: {question}\n"
+        "줄바꿈을 이용하여 가독성 좋게 답변을 해주세요."
         "답변:"
     )
     try:
@@ -228,9 +229,9 @@ def route_by_camping_type(state):
 def ask_camping_preference(state: GraphState) -> dict:
     message = (
         "🏕️ 장소를 추천해드릴게요! 어떤 스타일의 캠핑을 원하시나요?\n\n"
-        "1️⃣ 유료캠핑장 (오토캠핑장, 편의시설 완비)  \n"
-        "2️⃣ 글램핑/카라반 (럭셔리, 편안한 캠핑)  \n"
-        "3️⃣ 오지/노지캠핑 (자연 속 무료 캠핑)  \n\n"
+        "● 유료캠핑장 (오토캠핑장, 편의시설 완비)\n"
+        "● 글램핑/카라반 (럭셔리, 편안한 캠핑)\n"
+        "● 오지/노지캠핑 (자연 속 무료 캠핑)\n\n"
         "인원이나 스타일 등 모두 알려주세요!"
     )
     return {"final_answer": message}
@@ -264,7 +265,7 @@ def classify_camping_type(state: GraphState) -> dict:
         return {"camping_type_preference": "유료캠핑장", "error_message": str(e)}
 
 # --- ✅ 통합된 RAG + 웹검색 노드 ---
-async def search_camping(state: dict, camping_type: str, vectordb) -> dict:
+def search_camping(state: dict, camping_type: str, vectordb) -> dict:
     """최적 하이브리드: ChromaDB 저장된 dense + BGE-M3 sparse만 새로 계산"""
     
     search_query = f"{state.get('original_question', '')} {state.get('question', '')}".strip()
@@ -350,14 +351,14 @@ async def search_camping(state: dict, camping_type: str, vectordb) -> dict:
         if camping_type != "오지/노지캠핑" and top_2_results:
             docs_with_metadata = [(doc, score) for doc, score, _, _ in top_2_results]
             
-            snippets = await build_snippet_per_doc(
+            snippets = asyncio.run(build_snippet_per_doc(
                 docs_with_metadata=docs_with_metadata,
                 per_type_display=20,
                 fetch_timeout=8,
                 max_chars=2000,
                 enforce_name_in_title=True,
                 include_when_no_local_modified=True,
-            )
+            ))
             
             # 🔹 네이버 스니펫 디버그 출력
             for s in snippets:
@@ -389,6 +390,7 @@ async def search_camping(state: dict, camping_type: str, vectordb) -> dict:
             }
             locations_data.append(location_info)
 
+        print(f"[DEBUG] bge_new.py: search_camping, returning {len(locations_data)} locations")
         return {"locations": locations_data}
         
     except Exception as e:
@@ -396,14 +398,14 @@ async def search_camping(state: dict, camping_type: str, vectordb) -> dict:
         return {"locations": []}
 
 
-async def search_paid_camping(state):
-    return await search_camping(state, "유료캠핑장", vectordb)
+def search_paid_camping(state):
+    return search_camping(state, "유료캠핑장", vectordb)
 
-async def search_glamping_caravan(state):
-    return await search_camping(state, "글램핑/카라반", vectordb)
+def search_glamping_caravan(state):
+    return search_camping(state, "글램핑/카라반", vectordb)
 
-async def search_ojee_camping(state):
-    return await search_camping(state, "오지/노지캠핑", vectordb)
+def search_ojee_camping(state):
+    return search_camping(state, "오지/노지캠핑", vectordb)
 
 # --- 장소 추천 최종 답변 생성 ---
 def generate_location_answer(state: GraphState) -> dict:
@@ -452,7 +454,7 @@ def generate_location_answer(state: GraphState) -> dict:
         
         f"문맥:\n{context_str}\n\n"
         
-        "위 내용을 고려하여 답변을 작성해 주세요.\n"
+        "위 내용을 고려하여 줄바꿈을 이용하여 가독성 좋게 답변을 작성해 주세요.\n"
         "답변:"
     )
     try:

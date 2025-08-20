@@ -56,15 +56,20 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        const fullText = data.answer;
+        const fullText = data.answer.replace(/\n/g, '<br>');
         botParagraph.innerHTML = '';
         let i = 0;
         const speed = 30;
 
         function typeWriter() {
             if (i < fullText.length) {
-                botParagraph.innerHTML += fullText.charAt(i);
-                i++;
+                if (fullText.substring(i, i + 4) === '<br>') {
+                    botParagraph.innerHTML += '<br>';
+                    i += 4;
+                } else {
+                    botParagraph.innerHTML += fullText.charAt(i);
+                    i++;
+                }
                 chatBox.scrollTop = chatBox.scrollHeight;
                 setTimeout(typeWriter, speed);
             }
