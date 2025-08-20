@@ -16,7 +16,7 @@
         /* Dark Mode Toggle Switch */
         .dark-mode-toggle {
             position: absolute;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
         }
 
@@ -293,7 +293,7 @@
             polylines = [];
         }
 
-        function drawRoute(endLat, endLon, endName, listItemId) {
+        function drawRoute(endLat, endLon, endName, endAddress, listItemId) {
             // 기존 경로 삭제
             polylines.forEach(polyline => polyline.setMap(null));
             polylines = [];
@@ -413,14 +413,10 @@
                         const toll = properties.totalFare.toLocaleString('ko-KR');
                         const distanceInKm = (properties.totalDistance / 1000).toFixed(1);
 
-                        //let waypointsHTML = '';
-                        //if (waypoints.length > 0) {
-                        //    waypointsHTML = `경유지: ${waypoints.join(" &rarr; ")}<br>`;
-                        //}
-
                         listItem.innerHTML = `
                             <strong>${endName}</strong><br>
-                            ${waypointsHTML}
+                            주소: ${endAddress}<br>
+                            <hr>
                             거리: ${distanceInKm}km, 시간: 약 ${timeInMinutes}분, 통행료: ${toll}원
                         `;
                     }

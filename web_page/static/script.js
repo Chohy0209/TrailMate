@@ -23,13 +23,37 @@ document.addEventListener('DOMContentLoaded', function() {
         clearMap();
         document.getElementById('route-list').innerHTML = '';
         document.getElementById('map-and-list-container').style.display = 'none';
+        stopSpeech(); // 새 대화 시작 시 음성 중지
     });
 });
+
+function stopSpeech() {
+    if (window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+}
+
+function speak(text) {
+    stopSpeech(); // 새 음성 재생 전 기존 음성 중지
+    if ('speechSynthesis' in window) {
+        // HTML 태그 및 줄바꿈 제거
+        const cleanText = text.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'ko-KR'; // 한국어 설정
+        utterance.rate = 1.1; // 약간 빠른 속도
+        utterance.pitch = 1; // 기본 톤
+        window.speechSynthesis.speak(utterance);
+    } else {
+        console.log('이 브라우저는 음성 합성을 지원하지 않습니다.');
+    }
+}
 
 function sendMessage() {
     const userInput = document.getElementById("chat-input");
     const message = userInput.value.trim();
     if (!message) return;
+
+    stopSpeech(); // 사용자가 메시지를 보내면 이전 봇 응답 음성 중지
 
     const chatBox = document.querySelector(".messages");
     const userMessageDiv = document.createElement('div');
@@ -56,23 +80,24 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        const fullText = data.answer.replace(/\n/g, '<br>');
+        const fullTextForDisplay = data.answer.replace(/\n/g, '<br>');
         botParagraph.innerHTML = '';
         let i = 0;
         const speed = 30;
 
         function typeWriter() {
-            if (i < fullText.length) {
-                if (fullText.substring(i, i + 4) === '<br>') {
+            if (i < fullTextForDisplay.length) {
+                if (fullTextForDisplay.substring(i, i + 4) === '<br>') {
                     botParagraph.innerHTML += '<br>';
                     i += 4;
                 } else {
-                    botParagraph.innerHTML += fullText.charAt(i);
+                    botParagraph.innerHTML += fullTextForDisplay.charAt(i);
                     i++;
                 }
                 chatBox.scrollTop = chatBox.scrollHeight;
                 setTimeout(typeWriter, speed);
-            }
+            } 
+            // 전체 답변에 대한 자동 TTS는 제거
         }
 
         clearMap();
@@ -89,7 +114,29 @@ function sendMessage() {
                 const listItem = document.createElement("li");
                 listItem.id = `location-${index}`;
                 listItem.innerHTML = `<strong>${location.name}</strong><br>주소: ${location.address}`;
-                listItem.onclick = () => drawRoute(location.latitude, location.longitude, location.name, listItem.id);
+                
+                // 클릭 이벤트에 설명(description)과 위도/경도 전달
+                listItem.onclick = () => {
+                    console.log("[DEBUG] Location clicked:", location);
+                    console.log("[DEBUG] Description to speak:", location.local_meta); //location.description
+
+                    // 지도 중앙 이동 및 경로 그리기
+                    drawRoute(location.latitude, location.longitude, location.name, location.address, listItem.id);
+                    
+                    // 선택된 장소의 설명만 TTS로 재생 (데이터 확인 및 폴백 로직 추가)
+                    if (location.description && location.description.trim() !== '') {
+                        console.log("[DEBUG] Calling speak() with description.");
+                        speak(location.description);
+                    } else {
+                        console.log("[DEBUG] Description is empty. Speaking name and address as fallback.");
+                        const fallbackText = `${location.name}. 주소: ${location.address}`;
+                        speak(fallbackText);
+                    }
+
+                    // 지도 중앙으로 이동
+                    map.setCenter(new Tmapv2.LatLng(location.latitude, location.longitude));
+                    map.setZoom(15);
+                };
                 routeList.appendChild(listItem);
 
                 if (location.latitude && location.longitude) {

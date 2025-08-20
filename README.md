@@ -4,7 +4,7 @@
 
 **캠토리(Camptory)**는 사용자의 질문에 맞춰 캠핑장 정보를 제공하고 추천해주는 대화형 AI 챗봇입니다. 자연어 질문을 이해하고, 사용자의 선호도(유료 캠핑장, 글램핑, 노지 캠핑 등)를 파악하여 맞춤형 답변을 생성합니다. 추천된 장소는 Tmap API와 연동된 인터랙티브 지도에 표시되며, 사용자의 현재 위치로부터 실시간 교통 상황이 반영된 경로를 확인할 수 있습니다.
 
-이 프로젝트는 로컬 언어 모델과 RAG(Retrieval-Augmented Generation) 기술을 기반으로 하여, 특정 데이터에 기반한 정확하고 상세한 정보 제공을 목표로 합니다.
+이 프로젝트는 언어 모델과 RAG(Retrieval-Augmented Generation) 기술을 기반으로 하여, 특정 데이터에 기반한 정확하고 상세한 정보 제공을 목표로 합니다.
 
 ---
 
@@ -29,7 +29,7 @@
   - `Tmap API v2` (지도 및 경로 시각화)
 - **AI/ML**:
   - **LLM**: 로컬 모델 (`GPI API 사용`)
-  - **Embedding Model**: `intfloat/multilingual-e5-large-instruct` (RAG를 위한 텍스트 임베딩)
+  - **Embedding Model**: `dragonkue/BGE-m3-ko` (RAG를 위한 텍스트 임베딩)
 - **Database**:
   - `ChromaDB` (캠핑장 정보 저장을 위한 벡터 스토어)
 
@@ -50,9 +50,13 @@
 
 3.  **환경 변수 설정**
     - 프로젝트 루트 디렉터리에 `.env` 파일을 생성합니다.
-    - 파일에 Tmap API 키를 추가합니다.
+    - 파일에 Tmap API, GPT API, Naver API 키를 추가합니다.
       ```
-      TMAP_API_KEY=YOUR_TMAP_API_KEY
+      TMAP_API_KEY = YOUR_TMAP_API_KEY
+      OPENAI_API_KEY = YOUR_OPENAI_API_KEY
+      OPENWEATHERMAP_API_KEY = YOUR_OPENWEATHER_API_KEY
+      NAVER_CLIENT_ID = YOUR_NAVER_API_KEY
+      NAVER_CLIENT_SECRET = YOUR_NAVER_API_KEY
       ```
 
 4.  **데이터 및 모델 확인**
@@ -111,12 +115,12 @@ TrailMate/
      |                             |
      v                             v
 +-------------------+       +-------------------+
-| generate_general  |       | ask_preference    |
-| (일반 답변 생성)  |       | (캠핑 유형 요청)  |
+| generate_general  |       |  ask_preference   |
+| (일반 답변 생성)  |       |  (캠핑 유형 요청) |
 +---------+---------+       +---------+---------+
-          |                             |
-          v                             v
-        (END)                         (END)
+          |                           |
+          v                           v
+        (END)                       (END)
 ```
 
 **노드 설명:**
@@ -148,9 +152,9 @@ TrailMate/
             |                             |                                |
             v                             v                                v
   +-------------------+       +----------------------+          +----------------------+
-  | search_paid       |       |  search_glamping     |          | search_ojee          |
+  | search_paid       |       |  search_glamping     |          |     search_ojee      |
   | (유료 캠핑장 검색)|       | (글램핑/카라반 검색) |          | (오지/노지 캠핑 검색)|
-  +---------+---------+       +---------+------------+          +---------+------------+
+  +---------+---------+       +-----------+----------+          +---------+------------+
             |                             |                               |
             +-----------------------------+-------------------------------+
                                           |
