@@ -28,7 +28,7 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
     raise RuntimeError("NAVER 키 없음: .env에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 설정 필요")
 
-CHROMA_DB_PATH = "./camp_vectorDB_BGE_sentence_per_doc"
+CHROMA_DB_PATH = "./data/camp_vectorDB_BGE_sentence_per_doc"
 EMBEDDING_MODEL_NAME = "dragonkue/BGE-m3-ko"
 NAVER_CONCURRENCY = 3
 _rate_sem = asyncio.Semaphore(NAVER_CONCURRENCY)
@@ -428,7 +428,6 @@ async def build_snippet_per_doc(
         fetch_timeout=fetch_timeout,
         max_chars=max_chars,
     )
-
     # 2) 본문에서 키워드 포함 문장만 추출
     results: List[Dict[str, str]] = []
     for it in picked_items:
@@ -436,6 +435,17 @@ async def build_snippet_per_doc(
         link = it.get("link") or ""
         text = (it.get("content_text") or "").strip()
         sents = extract_keyword_sentences(text)
+        
+        print(f"\n[DEBUG] 키워드 문장 추출 시도: '{camp_name}'")
+        if sents:
+            print(f"[DEBUG] 추출된 키워드 문장 ({len(sents)}개):")
+            for i, s in enumerate(sents):
+                # 긴 문장은 일부만 출력
+                print(f"  - {i+1}: {s[:50]}...") 
+        else:
+            # 이 로그가 출력된다면, 키워드 문장 추출 실패가 원인입니다.
+            print("[DEBUG] 키워드 문장 추출 실패 (추출된 문장 없음).") 
+        
         if not sents:
             continue  # 키워드 문장 없으면 버림
         results.append({
@@ -444,6 +454,7 @@ async def build_snippet_per_doc(
             "본문내용": "\n".join(sents)
         })
     return results
+    
 def join_keyword_sentences(sentences: List[str], mode: str = "dot") -> str:
     # 문장 끝 불필요한 구두점 제거 후 조인
     cleaned = [re.sub(r'\s+', ' ', s).strip().rstrip('.,;·•-') for s in sentences if s.strip()]
@@ -495,32 +506,3 @@ def format_snippets_as_text(
         return json.dumps(kv, ensure_ascii=False, indent=2)
 
     return format_snippets_as_text(snippets, style="block", body_sep=body_sep)
-
-# === 데모 ===
-async def demo_run():
-    query = input("질문: ").strip()
-    camping_type = input("캠핑유형(엔터=전체, 예:'유료캠핑장'/'글램핑/카라반'/'오지/노지캠핑'): ").strip() or None
-
-    docs_with_metadata = get_top2_docs(vectordb, query=query, camping_type=camping_type)
-    print("\n[Top-2 로컬문서]")
-    for i, (doc, score) in enumerate(docs_with_metadata, 1):
-        m = doc.metadata or {}
-        print(f"- ({i}) score={score:.4f} | 이름={m.get('캠핑장이름') or m.get('name')} | 수정날짜={m.get('수정날짜')}")
-
-    snippets = await build_snippet_per_doc(docs_with_metadata, per_type_display=20)
-
-    if not snippets:
-        print("\n(선택된 글 없음: 최신 글이 없거나 본문/키워드 매칭 실패)")
-        return
-
-    print("\n[최종 결과: 문서당 1개]")
-    for row in snippets:
-        print(row["장소이름"])
-        print(row["링크주소"])
-        print("본문내용:")
-        print(row["본문내용"])
-        print("-" * 60)
-
-
-if __name__ == "__main__":
-    asyncio.run(demo_run())

@@ -17,7 +17,7 @@ if DEBUG:
 else:
     # model_gpt.py에서 main_app과 continuation_app을 임포트
     print("loading gpt model")
-    from bge_new import main_app, continuation_app
+    from graphrag import main_app, continuation_app
     
 
 app = Flask(__name__)
