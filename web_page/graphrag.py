@@ -9,14 +9,14 @@ from typing import TypedDict, Annotated, List, Any, Dict
 from naver_api import build_snippet_per_doc, format_snippets_as_text
 
 # OpenAI SDK
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 # LangChain / Vector store
 from langgraph.graph import StateGraph, END
 from langchain_core.documents import Document
 from dotenv import load_dotenv
 import numpy as np
-from neo4j import GraphDatabase
+from neo4j import AsyncGraphDatabase
 
 # BGE-M3 통합 사용
 from FlagEmbedding import BGEM3FlagModel
@@ -27,7 +27,7 @@ load_dotenv()
   
 #Neo4j 드라이버 (환경변수에서 가져오기 권장)
 uri = os.getenv("NEO4J_URI")
-driver = GraphDatabase.driver(uri, auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD")))
+driver = AsyncGraphDatabase.driver(uri, auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD")))
 
 
 
@@ -47,7 +47,7 @@ SIM_FUNC = "cosine"   # 'cosine' 추천
 
 # ===== 환경 설정 =====
 # ⚠️ 키는 환경변수로 읽습니다: export OPENAI_API_KEY="sk-..."
-client = OpenAI(
+client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
     timeout=30.0,
 )
@@ -114,11 +114,11 @@ class GraphState(TypedDict):
 
 #===== 공용 LLM 호출 유틸 =====
 
-def oai_text(prompt: str, model: str = GPT_MODEL) -> Dict[str, Any]:
+async def oai_text(prompt: str, model: str = GPT_MODEL) -> Dict[str, Any]:
     """Responses API로 텍스트만 받아오는 헬퍼.
     반환: {"text": str, "request_id": str}
     """
-    resp = client.responses.create(
+    resp = await client.responses.create(
         model=model,
         input=prompt,
     )
@@ -127,7 +127,7 @@ def oai_text(prompt: str, model: str = GPT_MODEL) -> Dict[str, Any]:
 
 # --- 1차 분류 노드 ---
 
-def classify_question_type(state: GraphState) -> dict:
+async def classify_question_type(state: GraphState) -> dict:
     t0 = time.perf_counter()
     question = state["question"]
     prompt = (
@@ -138,7 +138,7 @@ def classify_question_type(state: GraphState) -> dict:
         "분류:"
     )
     try:
-        out = oai_text(prompt)
+        out = await oai_text(prompt)
         text = out["text"]
 
         categories = ["일반 캠핑", "장소 추천"]
@@ -155,7 +155,7 @@ def classify_question_type(state: GraphState) -> dict:
         
 # --- 일반 질문 답변 노드 ---
 
-def generate_general_answer(state: GraphState) -> dict:
+async def generate_general_answer(state: GraphState) -> dict:
     t0 = time.perf_counter()
     question = state["question"]
     prompt = (
@@ -165,7 +165,7 @@ def generate_general_answer(state: GraphState) -> dict:
         "답변:"
     )
     try:
-        out = oai_text(prompt)
+        out = await oai_text(prompt)
         answer = out["text"]
         print(f"일반질문 응답 ({time.perf_counter() - t0:.2f}s | req={out['request_id']})")
         return {"final_answer": answer}
@@ -188,7 +188,7 @@ def route_by_camping_type(state):
 
 # --- 캠핑 유형 선택 요청 노드 ---
 
-def ask_camping_preference(state: GraphState) -> dict:
+async def ask_camping_preference(state: GraphState) -> dict:
     message = (
         "🏕️ 장소를 추천해드릴게요! 어떤 스타일의 캠핑을 원하시나요?\n\n"
         "▶ 유료캠핑장 (오토캠핑장, 편의시설 완비)  \n"
@@ -199,7 +199,7 @@ def ask_camping_preference(state: GraphState) -> dict:
     return {"final_answer": message}
 
 # --- 캠핑 유형 분류 노드 ---
-def classify_camping_type(state: GraphState) -> dict:
+async def classify_camping_type(state: GraphState) -> dict:
     t0 = time.perf_counter()
     user_input = state["question"]  # 사용자의 답변
     original_question = state.get("original_question", "")
@@ -213,7 +213,7 @@ def classify_camping_type(state: GraphState) -> dict:
     )
     
     try:
-        out = oai_text(prompt)
+        out = await oai_text(prompt)
         text = out["text"]
 
         categories = ["유료캠핑장", "글램핑/카라반", "오지/노지캠핑"]
@@ -228,7 +228,7 @@ def classify_camping_type(state: GraphState) -> dict:
 
 
 
-def ensure_vector_indexes(session):
+async def ensure_vector_indexes(session):
     """Camp/Attribute/Summary 벡터 인덱스를 보장 (이미 있으면 무시)."""
     # Neo4j 5.x: IF NOT EXISTS 지원. 미지원 버전이면 try/except로 무시.
     stmts = [
@@ -265,7 +265,7 @@ def ensure_vector_indexes(session):
     ]
     for stmt in stmts:
         try:
-            session.run(stmt)
+            await session.run(stmt)
         except Exception as _:
             # 이미 존재하거나 버전 이슈면 조용히 통과
             pass
@@ -421,27 +421,26 @@ async def search_camping(state: dict, camping_type: str) -> dict:
 
     try:
         # 0) 쿼리 임베딩
-        query_vec = unified_embedder.encode_for_vector_db([search_query])[0].tolist()
+        dense_vecs = await asyncio.to_thread(unified_embedder.encode_for_vector_db, [search_query])
+        query_vec = dense_vecs[0].tolist()
 
-        with driver.session() as session:
-            ensure_vector_indexes(session)  # 인덱스 보장
+        async with driver.session() as session:
+            await ensure_vector_indexes(session)  # 인덱스 보장
 
             # 1) Roll-up 검색 실행
-            records = session.run(
+            records = await session.run(
                 _rollup_query(),
-                {
-                    "q": query_vec,
-                    "camping_type": camping_type,
-                    "topk_camp": TOPK_CAMP,
-                    "topk_attr": TOPK_ATTR,
-                    "topk_sum": TOPK_SUM,
-                    "w_camp": WEIGHT_CAMP,
-                    "w_attr": WEIGHT_ATTR,
-                    "w_sum": WEIGHT_SUM,
-                    "rollup_limit": ROLLUP_LIMIT,
-                }
+                q=query_vec,
+                camping_type=camping_type,
+                topk_camp=TOPK_CAMP,
+                topk_attr=TOPK_ATTR,
+                topk_sum=TOPK_SUM,
+                w_camp=WEIGHT_CAMP,
+                w_attr=WEIGHT_ATTR,
+                w_sum=WEIGHT_SUM,
+                rollup_limit=ROLLUP_LIMIT,
             )
-            rows = list(records)
+            rows = await records.list()
 
         if not rows:
             print("검색 결과 없음")
@@ -490,6 +489,7 @@ async def search_camping(state: dict, camping_type: str) -> dict:
         print(f"❌ Neo4j GraphRAG 검색 실패: {e}")
         return {"locations": []}
 
+
 # --- 래퍼: 유형별 검색 ---
 async def search_paid_camping(state):
     return await search_camping(state, "유료캠핑장")
@@ -502,9 +502,8 @@ async def search_ojee_camping(state):
 
 
 # --- 장소 추천 최종 답변 생성 ---
-def generate_location_answer(state: GraphState) -> dict:
-    t0 = time.perf_counter()
-    
+async def generate_location_answer(state: GraphState) -> dict:
+    t0 = time.perf_counter()    
     original_question = state.get("original_question", "")
     second_question = state.get("question", "")
     camping_type = state.get("camping_type_preference", "")
@@ -537,7 +536,7 @@ def generate_location_answer(state: GraphState) -> dict:
             f"네이버 정보: {snippet_text}"
         )
 
-    context_str = "\n---\n".join(context_strs[:2])  # 최대 2개까지만
+    context_str = "\n---".join(context_strs[:2])  # 최대 2개까지만
 
     prompt = (
         f"당신은 캠핑에이전트 챗봇입니다. 아래 문맥을 참고하여 '{camping_type}' 유형에 맞는 장소를 추천해주세요. 최대한 친절하게 설명하세요.\n"
@@ -553,7 +552,7 @@ def generate_location_answer(state: GraphState) -> dict:
         "답변:"
     )
     try:
-        out = oai_text(prompt)
+        out = await oai_text(prompt)
         answer = out["text"]
         print(f"✅ 장소 추천 답변 생성 완료 ({time.perf_counter() - t0:.2f}s | req={out['request_id']})")
         return {"final_answer": answer, "locations": final_locations}
@@ -605,13 +604,14 @@ continuation_app = continuation.compile()
 
 # --- 메인 실행 함수 ---
 
-def main():
+async def main():
     print("🏕️ 캠핑 챗봇에 오신 것을 환영합니다! '종료'를 입력하면 종료됩니다.")
     waiting_for_camping_choice = False
     original_q_cache: str | None = None
 
     while True:
-        user_input = input("\n❓ 사용자 질문: ").strip()
+        user_input = await asyncio.to_thread(input, "\n❓ 사용자 질문: ")
+        user_input = user_input.strip()
         if user_input.lower() in ["종료", "quit", "exit"]:
             print("👋 챗봇을 종료합니다.")
             break
@@ -626,7 +626,7 @@ def main():
                     "search_attempted": False,
                     "loop_count": 0,
                 }
-                result = asyncio.run(continuation_app.ainvoke(state))
+                result = await continuation_app.ainvoke(state)
                 waiting_for_camping_choice = False
                 original_q_cache = None
             else:
@@ -637,7 +637,7 @@ def main():
                     "search_attempted": False,
                     "loop_count": 0,
                 }
-                result = asyncio.run(main_app.ainvoke(state))
+                result = await main_app.ainvoke(state)
 
                 # 다음 입력으로 유형을 받도록 전환
                 if "어떤 스타일의 캠핑을 원하시나요?" in result.get("final_answer", ""):
@@ -652,4 +652,4 @@ def main():
             original_q_cache = None
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

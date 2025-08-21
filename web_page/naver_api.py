@@ -7,7 +7,7 @@ DB 메타 '수정날짜'보다 최신인 글만 허용, 본문 파싱 실패 글
 import os
 import re
 import asyncio
-import requests
+import httpx
 from urllib.parse import urlparse, parse_qs
 from typing import List, Tuple, Optional, Dict, Any
 from datetime import datetime, timezone
@@ -74,7 +74,7 @@ def _normalize(s: str) -> str:
     if not isinstance(s, str):
         s = str(s or "")
     s = s.strip()
-    s = re.sub(r"[\(\)\[\]\{\}]", " ", s)
+    s = re.sub(r"[()[]{}]", " ", s)
     s = re.sub(r"\s+", " ", s)
     return s
 
@@ -118,18 +118,18 @@ def _latest_modified_from_meta(meta: Dict[str, Any]) -> Optional[datetime]:
 # -----------------------------
 # 네이버 API
 # -----------------------------
-async def _http_get_with_retry(url: str, headers: Dict[str, str], params: Dict[str, Any],
-                               timeout: int = 7, max_retries: int = 3) -> requests.Response:
+async def _http_get_with_retry(client: httpx.AsyncClient, url: str, headers: Dict[str, str], params: Dict[str, Any],
+                               timeout: int = 7, max_retries: int = 3) -> httpx.Response:
     delay = 0.8
     for _ in range(max_retries):
         try:
-            resp = await asyncio.to_thread(requests.get, url, headers=headers, params=params, timeout=timeout)
+            resp = client.get(url, headers=headers, params=params, timeout=timeout)
             resp.raise_for_status()
             return resp
-        except requests.HTTPError as e:
-            status = e.response.status_code if e.response is not None else None
+        except httpx.HTTPStatusError as e:
+            status = e.response.status_code
             if status in (429, 500, 502, 503, 504):
-                retry_after = e.response.headers.get("Retry-After") if e.response is not None else None
+                retry_after = e.response.headers.get("Retry-After")
                 try:
                     wait_s = int(retry_after) if retry_after else delay
                 except Exception:
@@ -138,7 +138,7 @@ async def _http_get_with_retry(url: str, headers: Dict[str, str], params: Dict[s
                 delay *= 2
                 continue
             raise
-    resp = await asyncio.to_thread(requests.get, url, headers, params, timeout=timeout)
+    resp = client.get(url, headers=headers, params=params, timeout=timeout)
     resp.raise_for_status()
     return resp
 
@@ -155,8 +155,8 @@ async def naver_search_api(query: str, search_type: str, display: int = 20, sort
     headers = {"X-Naver-Client-Id": NAVER_CLIENT_ID, "X-Naver-Client-Secret": NAVER_CLIENT_SECRET}
     params = {"query": query, "display": display, "start": 1, "sort": eff_sort}
 
-    async with _rate_sem:
-        resp = await _http_get_with_retry(url, headers, params, timeout=7)
+    async with _rate_sem, httpx.AsyncClient() as client:
+        resp = _http_get_with_retry(client, url, headers, params, timeout=7)
 
     items = resp.json().get("items", [])
     out = []
@@ -183,8 +183,7 @@ def to_mobile_if_naver(url: str) -> str:
         if not (blog_id and log_no):
             m = re.match(r"^/([^/]+)/(\d+)", path)
             if m: blog_id, log_no = m.group(1), m.group(2)
-        return f"https://m.blog.naver.com/{blog_id}/{log_no}" if (blog_id and log_no) \
-               else url.replace("://blog.naver.com", "://m.blog.naver.com")
+        return f"https://m.blog.naver.com/{blog_id}/{log_no}" if (blog_id and log_no) else url.replace("://blog.naver.com", "://m.blog.naver.com")
     if "cafe.naver.com" in host and "m.cafe.naver.com" not in host:
         clubid = q.get("clubid", [None])[0]; articleid = q.get("articleid", [None])[0]
         if clubid and articleid:
@@ -221,12 +220,9 @@ def extract_main_text_from_html(url: str, html: str) -> str:
 async def fetch_article_text(url: str, timeout: int = 8, max_chars: int = 4000) -> Optional[str]:
     mob = to_mobile_if_naver(url)
     try:
-        resp = await asyncio.to_thread(
-            requests.get, mob,
-            headers={"User-Agent":"Mozilla/5.0", "Referer":"https://m.naver.com/"},
-            timeout=timeout
-        )
-        resp.raise_for_status()
+        async with httpx.AsyncClient() as client:
+            resp = client.get(mob, headers={"User-Agent":"Mozilla/5.0", "Referer":"https://m.naver.com/"}, timeout=timeout)
+            resp.raise_for_status()
         text = extract_main_text_from_html(mob, resp.text)
         txt = text[:max_chars].strip() if text else None
         return txt if txt else None
@@ -390,7 +386,7 @@ KEYWORD_REGEX = re.compile("|".join(KEYWORD_PATTERNS), re.I)
 
 def _sent_tokenize_kr(text: str) -> List[str]:
     s = re.sub(r"\s+", " ", (text or "")).strip()
-    s = re.sub(r"([\.!\?])\s+", r"\1\n", s)
+    s = re.sub(r"([\.!?])\s+", r"\1\n", s)
     sents = [x.strip() for x in s.split("\n") if x.strip()]
     return [x for x in sents if len(x) >= 6]
 
