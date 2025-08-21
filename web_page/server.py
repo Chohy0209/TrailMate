@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify, session
 import asyncio
 import os
 from dotenv import load_dotenv
-import requests
+import httpx
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -26,7 +26,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
 
 @app.route("/")
-def index():
+async def index():
     """
     메인 페이지를 렌더링합니다.
     세션을 초기화하고 TMAP API 키를 템플릿에 전달합니다.
@@ -40,7 +40,7 @@ def index():
     return render_template("trailmate_main_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key)
 
 @app.route("/camptory_chat", methods=["GET", "POST"])
-def camptory_chat():
+async def camptory_chat():
     """
     채팅 페이지를 렌더링합니다.
     TMAP API 키를 템플릿에 전달합니다.
@@ -56,7 +56,7 @@ def camptory_chat():
     return render_template("trailmate_chatting_page.html", tmap_api_key=tmap_api_key, openweathermap_api_key=openweathermap_api_key, initial_message=initial_message)
 
 @app.route("/get_tmap_route", methods=["POST"])
-def get_tmap_route():
+async def get_tmap_route():
     """
     TMAP API를 호출하여 자동차 경로 정보를 가져옵니다.
     요청 본문에서 출발지와 목적지 좌표를 받아 처리합니다.
@@ -91,13 +91,14 @@ def get_tmap_route():
     url = "https://apis.openapi.sk.com/tmap/routes?version=1"
     
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # HTTP 오류 발생 시 예외 발생
-        route_data = response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, headers=headers)
+            response.raise_for_status()  # HTTP 오류 발생 시 예외 발생
+            route_data = response.json()
         
         return jsonify(route_data)
 
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         print(f"TMAP API 요청 오류: {e} \n")
         return jsonify({"error": "TMAP API 연동 중 오류가 발생했습니다."}), 502
     except (IndexError, KeyError) as e:
@@ -106,6 +107,7 @@ def get_tmap_route():
     except Exception as e:
         print(f"경로 데이터 처리 오류: {e} \n")
         return jsonify({"error": "경로 데이터를 처리하는 중 내부 오류가 발생했습니다."}), 500
+
 
 @app.route("/chat", methods=["POST"])
 async def chat():
