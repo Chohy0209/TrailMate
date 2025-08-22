@@ -123,7 +123,7 @@ async def _http_get_with_retry(client: httpx.AsyncClient, url: str, headers: Dic
     delay = 0.8
     for _ in range(max_retries):
         try:
-            resp = client.get(url, headers=headers, params=params, timeout=timeout)
+            resp = await client.get(url, headers=headers, params=params, timeout=timeout)
             resp.raise_for_status()
             return resp
         except httpx.HTTPStatusError as e:
@@ -138,7 +138,7 @@ async def _http_get_with_retry(client: httpx.AsyncClient, url: str, headers: Dic
                 delay *= 2
                 continue
             raise
-    resp = client.get(url, headers=headers, params=params, timeout=timeout)
+    resp = await client.get(url, headers=headers, params=params, timeout=timeout)
     resp.raise_for_status()
     return resp
 
@@ -156,7 +156,7 @@ async def naver_search_api(query: str, search_type: str, display: int = 20, sort
     params = {"query": query, "display": display, "start": 1, "sort": eff_sort}
 
     async with _rate_sem, httpx.AsyncClient() as client:
-        resp = _http_get_with_retry(client, url, headers, params, timeout=7)
+        resp = await _http_get_with_retry(client, url, headers, params, timeout=7)
 
     items = resp.json().get("items", [])
     out = []
@@ -221,7 +221,7 @@ async def fetch_article_text(url: str, timeout: int = 8, max_chars: int = 4000) 
     mob = to_mobile_if_naver(url)
     try:
         async with httpx.AsyncClient() as client:
-            resp = client.get(mob, headers={"User-Agent":"Mozilla/5.0", "Referer":"https://m.naver.com/"}, timeout=timeout)
+            resp = await client.get(mob, headers={"User-Agent":"Mozilla/5.0", "Referer":"https://m.naver.com/"}, timeout=timeout)
             resp.raise_for_status()
         text = extract_main_text_from_html(mob, resp.text)
         txt = text[:max_chars].strip() if text else None
@@ -463,7 +463,7 @@ def join_keyword_sentences(sentences: List[str], mode: str = "dot") -> str:
 
 def format_snippets_as_text(
     snippets: List[Dict[str, str]],
-    style: str = "block",   # "block" | "kv"
+    style: str = "block",   # "block" | "kv" 
     body_sep: str = "dot",  # "dot" | "comma"  ← 추가
 ) -> str:
     if not snippets:

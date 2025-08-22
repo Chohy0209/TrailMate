@@ -440,7 +440,8 @@ async def search_camping(state: dict, camping_type: str) -> dict:
                 w_sum=WEIGHT_SUM,
                 rollup_limit=ROLLUP_LIMIT,
             )
-            rows = await records.list()
+            # 결과를 비동기적으로 가져옴
+            rows = [record async for record in records]
 
         if not rows:
             print("검색 결과 없음")
