@@ -28,7 +28,7 @@ NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
     raise RuntimeError("NAVER 키 없음: .env에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 설정 필요")
 
-CHROMA_DB_PATH = "./data/camp_vectorDB_BGE_sentence_per_doc"
+CHROMA_DB_PATH = "../data/camp_vectorDB_BGE_sentence_per_doc"
 EMBEDDING_MODEL_NAME = "dragonkue/BGE-m3-ko"
 NAVER_CONCURRENCY = 3
 _rate_sem = asyncio.Semaphore(NAVER_CONCURRENCY)
