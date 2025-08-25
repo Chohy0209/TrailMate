@@ -9,8 +9,8 @@ from services import driver
 from rag_components import UnifiedBGEM3Embedder, build_workflows
 
 # --- Quart App Initialization ---
-app = Quart(__name__)
-app = cors(app, allow_origin="*") # 모든 출처에서의 요청 허용 (개발용)
+app = Quart(__name__, static_folder='static', template_folder='templates')
+app = cors(app, allow_origin="*")
 app.secret_key = config.FLASK_SECRET_KEY
 
 # --- Web Server Routes ---
@@ -18,20 +18,16 @@ app.secret_key = config.FLASK_SECRET_KEY
 async def index():
     """메인 페이지 렌더링"""
     session.clear()
-    return await render_template(
-        "trailmate_main_page.html", 
-        tmap_api_key=config.TMAP_API_KEY, 
-        openweathermap_api_key=config.OPENWEATHERMAP_API_KEY
-    )
+    return await render_template("trailmate_main_page.html")
 
 @app.route("/camptory_chat", methods=["GET", "POST"])
 async def camptory_chat():
     """채팅 페이지 렌더링"""
     initial_message = (await request.form).get("message") if request.method == "POST" else None
     return await render_template(
-        "trailmate_chatting_page.html", 
-        tmap_api_key=config.TMAP_API_KEY, 
-        openweathermap_api_key=config.OPENWEATHERMAP_API_KEY, 
+        "trailmate_chatting_page.html",
+        tmap_api_key=config.TMAP_API_KEY,
+        openweathermap_api_key=config.OPENWEATHERMAP_API_KEY,
         initial_message=initial_message
     )
 
@@ -43,25 +39,21 @@ async def get_tmap_route():
         return jsonify({"error": "필수 파라미터가 누락되었습니다."}), 400
 
     payload = {
-        "startX": data["startX"], "startY": data["startY"],
-        "endX": data["endX"], "endY": data["endY"],
-        "startName": "현재 위치", "endName": data.get("endName", "목적지"),
-        "searchOption": 0, "trafficInfo": "Y"
+        "startX": data["startX"], "startY": data["startY"], "endX": data["endX"], "endY": data["endY"],
+        "startName": "현재 위치", "endName": data.get("endName", "목적지"), "trafficInfo": "Y"
     }
     url = "https://apis.openapi.sk.com/tmap/routes?version=1"
     headers = {"appKey": config.TMAP_API_KEY, "content-type": "application/json"}
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, headers=headers)
             response.raise_for_status()
             return jsonify(response.json())
     except httpx.HTTPStatusError as e:
-        print(f"TMAP API 오류: {e.response.status_code} - {e.response.text}")
         return jsonify({"error": f"TMAP API 오류: {e.response.status_code}"}), e.response.status_code
     except Exception as e:
-        print(f"경로 데이터 처리 오류: {e}")
-        return jsonify({"error": "경로 데이터를 처리하는 중 내부 오류가 발생했습니다."}), 500
+        return jsonify({"error": "내부 오류가 발생했습니다."}), 500
 
 @app.route("/chat", methods=["POST"])
 async def chat():
@@ -72,11 +64,10 @@ async def chat():
         return jsonify({"answer": "메시지를 입력해주세요.", "locations": []})
 
     conversation_state = session.get('state', 'new_conversation')
-    
     initial_state = {
         "question": message,
         "original_question": session.get('original_question', message),
-        "unified_embedder": app.unified_embedder 
+        "unified_embedder": app.unified_embedder
     }
 
     try:
@@ -97,28 +88,19 @@ async def chat():
         session.clear()
         return jsonify({"answer": "죄송합니다. 처리 중 오류가 발생했습니다.", "locations": []}), 500
 
-
 # --- Application Startup ---
 @app.before_serving
 async def initialize_app():
-    """Uvicorn/Hypercorn 서버가 실행된 후, 요청을 받기 전에 AI 컴포넌트를 초기화합니다."""
-    print("🚀 Quart 애플리케이션 시작... AI 컴포넌트를 초기화합니다.")
-    
+    """서버 시작 전 AI 컴포넌트 초기화"""
+    print("🚀 AI 컴포넌트를 초기화합니다.")
     app.unified_embedder = await UnifiedBGEM3Embedder.create()
     app.main_workflow, app.continuation_workflow = build_workflows()
-    
     async with driver.session() as session:
         try:
             await session.run(f"CREATE VECTOR INDEX camp_embedding_index IF NOT EXISTS FOR (c:Camp) ON (c.embedding) OPTIONS {{indexConfig: {{`vector.dimensions`: {config.VECTOR_DIM}, `vector.similarity_function`: '{config.SIM_FUNC}'}}}}")
         except Exception as e:
-            print(f"인덱스 생성 중 경고 발생 (이미 존재할 수 있음): {e}")
-
-    print("✅ AI 컴포넌트 초기화 완료. 서버가 요청을 받을 준비가 되었습니다.")
-
+            print(f"인덱스 생성 중 경고 (이미 존재할 수 있음): {e}")
+    print("✅ AI 컴포넌트 초기화 완료. 서버가 준비되었습니다.")
 
 if __name__ == "__main__":
-    print("=" * 50)
-    print("⚠️  이 파일은 직접 실행하는 것이 아닙니다.")
-    print("👇 아래 명령어를 터미널에 입력하여 서버를 실행하세요:")
-    print("uvicorn app:app --host 0.0.0.0 --port 5000")
-    print("=" * 50)
+    print("="*50 + "\n⚠️  이 파일은 직접 실행하는 것이 아닙니다." + "\n👇 'uvicorn app:app' 명령어로 서버를 실행하세요:\n" + "="*50)

@@ -6,105 +6,61 @@
     <title>TrailMate - 당신의 캠핑 파트너</title>
     <link rel="stylesheet" href="/static/base.css">
     <link rel="stylesheet" href="/static/landing.css">
-    <link rel="stylesheet" href="/static/claude_styles.css">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
     <div class="background-elements">
-        <div class="mountain mountain-1"></div>
-        <div class="mountain mountain-2"></div>
-        <div class="mountain mountain-3"></div>
-        <div class="tree tree-1"></div>
-        <div class="tree tree-2"></div>
-        <div class="tree tree-3"></div>
-        <div class="tree tree-4"></div>
-        <div class="star star-1">✦</div>
-        <div class="star star-2">✦</div>
-        <div class="star star-3">✦</div>
-        <div class="star star-4">✦</div>
-        <div class="star star-5">✦</div>
-        <div class="star star-6">✦</div>
-        <div class="moon"></div>
-        <div class="clouds"></div>
-        <div class="floating-particles particle-1"></div>
-        <div class="floating-particles particle-2"></div>
-        <div class="floating-particles particle-3"></div>
-        <div class="floating-particles particle-4"></div>
-        <div class="floating-particles particle-5"></div>
-        <div class="floating-particles particle-6"></div>
-        <div class="floating-particles particle-7"></div>
-        <div class="floating-particles particle-8"></div>
-        <div class="floating-particles particle-9"></div>
+        <div class="star">✦</div> <div class="star">✦</div> <div class="star">✦</div>
+        <div class="star">✦</div> <div class="star">✦</div> <div class="star">✦</div>
     </div>
-
     <div class="container">
         <header>
-            <!--<div class="logo">
-                <img src="/static/squirrel.png" alt="TrailMate Logo">
+            <div class="logo">
+                <img src="/static/trailmate_head.png" alt="TrailMate Logo" style="width: 320px; height: 110px;">
             </div>
-            <h1 class="trailmate-title">TrailMate</h1>-->
-            <div class = "logo">
-                <img src = "./static/trailmate_head.png" alt = "TrailMate Logo" style="width: 320px; height: 110px">
-            </div>
-            <p style="font-family:'Exo 2'; font-size:20px">안녕하세요! 저는 캠핑 전문 AI 어시스턴트, 캠토리입니다.<br>캠핑에 관한 모든 궁금증을 해결해드릴게요!</p>
+            <p style="font-family:'Exo 2', sans-serif; font-size:20px">안녕하세요! 저는 캠핑 전문 AI 어시스턴트, 캠토리입니다.<br>캠핑에 관한 모든 궁금증을 해결해드릴게요!</p>
         </header>
-
         <main>
-            <button onclick="location.href='/camptory_chat'" class="cta-button start-button">캠토리와 대화 시작하기 ✧</button>
-            
-            <div class="features cards-container">
-                <a href="javascript:void(0);" onclick="postToChat('캠핑 장비 추천해줘')" class="feature-card card"> 
-                    <div class="icon card-icon"><img src = "./static/camp_util.png" alt="camp_util_logo" width = "40px"></div>
-                    <h3 class="card-title">캠핑 장비 추천</h3>
-                    <p class="card-description">상황에 맞는 최적의 장비를 추천해드려요.</p>
+            <button onclick="location.href='/camptory_chat'" class="cta-button">캠토리와 대화 시작하기 ✧</button>
+            <div class="features">
+                <a href="javascript:void(0);" onclick="postToChat('캠핑 장비 추천해줘')" class="feature-card">
+                    <div class="icon"><img src="/static/camp_util.png" alt="장비 추천" width="40px"></div>
+                    <h3>캠핑 장비 추천</h3>
+                    <p>상황에 맞는 최적의 장비를 추천해드려요.</p>
                 </a>
-                <a href="javascript:void(0);" onclick="postToChat('캠핑장 추천해줘')" class="feature-card card">
-                    <div class="icon card-icon"><img src = "./static/camp_info.png" alt="camp_info_logo" width = "40px"></div>
-                    <h3 class="card-title">캠핑장 추천</h3>
-                    <p class="card-description">전국 캠핑장 정보에 기반하여 추천해드립니다.</p>
+                <a href="javascript:void(0);" onclick="postToChat('캠핑장 추천해줘')" class="feature-card">
+                    <div class="icon"><img src="/static/camp_info.png" alt="캠핑장 추천" width="40px"></div>
+                    <h3>캠핑장 추천</h3>
+                    <p>전국 캠핑장 정보에 기반하여 추천해드립니다.</p>
                 </a>
-                <a href="javascript:void(0);" onclick="postToChat('캠핑 요리 추천해줘')" class="feature-card card">
-                    <div class="icon card-icon"><img src = "./static/camp_food.png" alt="camp_food_logo" width = "40px"></div>
-                    <h3 class="card-title">캠핑 요리</h3>
-                    <p class="card-description">간단하고 맛있는 캠핑 요리 레시피를 알려드려요.</p>
+                <a href="javascript:void(0);" onclick="postToChat('캠핑 요리 추천해줘')" class="feature-card">
+                    <div class="icon"><img src="/static/camp_food.png" alt="캠핑 요리" width="40px"></div>
+                    <h3>캠핑 요리</h3>
+                    <p>간단하고 맛있는 캠핑 요리 레시피를 알려드려요.</p>
                 </a>
-                <a href="javascript:void(0);" onclick="postToChat('캠핑 안전 가이드 알려줘')" class="feature-card card">
-                    <div class="icon card-icon"><img src = "./static/camp_safty.png" alt="camp_safty_logo" width = "40px"></div>
-                    <h3 class="card-title">안전 가이드</h3>
-                    <p class="card-description">안전한 캠핑을 위한 필수 정보를 안내해요.</p>
+                <a href="javascript:void(0);" onclick="postToChat('캠핑 안전 가이드 알려줘')" class="feature-card">
+                    <div class="icon"><img src="/static/camp_safty.png" alt="안전 가이드" width="40px"></div>
+                    <h3>안전 가이드</h3>
+                    <p>안전한 캠핑을 위한 필수 정보를 안내해요.</p>
                 </a>
             </div>
         </main>
-
         <footer>
             <p>▲ 자연과 함께하는 특별한 시간을 만들어 보세요 ▲</p>
         </footer>
     </div>
-
-    <script src="/static/claude_script.js"></script>
+    <script src="/static/landing_script.js"></script>
     <script>
         function postToChat(message) {
-            // 동적으로 form 생성
             const form = document.createElement('form');
             form.method = 'post';
             form.action = '/camptory_chat';
-
-            // 메시지를 담을 input 생성
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'message';
             hiddenInput.value = message;
-
-            // form에 input 추가
             form.appendChild(hiddenInput);
-
-            // body에 form 추가 후 submit
             document.body.appendChild(form);
             form.submit();
         }
