@@ -217,14 +217,14 @@ def extract_main_text_from_html(url: str, html: str) -> str:
         if node: return _clean(node.get_text("\n"))
     return _clean(soup.get_text("\n"))
 
-async def fetch_article_text(url: str, timeout: int = 8, max_chars: int = 4000) -> Optional[str]:
+async def fetch_article_text(url: str, timeout: int = 8) -> Optional[str]:
     mob = to_mobile_if_naver(url)
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(mob, headers={"User-Agent":"Mozilla/5.0", "Referer":"https://m.naver.com/"}, timeout=timeout)
             resp.raise_for_status()
         text = extract_main_text_from_html(mob, resp.text)
-        txt = text[:max_chars].strip() if text else None
+        txt = text.strip() if text else None
         return txt if txt else None
     except Exception as e:
         print("fetch failed:", e)
@@ -238,8 +238,7 @@ async def fetch_single_best_with_content_per_doc(
     per_type_display: int = 20,
     include_when_no_local_modified: bool = True,
     enforce_name_in_title: bool = True,
-    fetch_timeout: int = 8,
-    max_chars: int = 3000,
+    fetch_timeout: int = 8
 ) -> List[Dict[str, Any]]:
     """
     각 RAG 문서(캠핑장)마다:
@@ -306,7 +305,7 @@ async def fetch_single_best_with_content_per_doc(
             link = it.get("link", "")
             if not link or link in seen_links:
                 continue
-            content = await fetch_article_text(link, timeout=fetch_timeout, max_chars=max_chars)
+            content = await fetch_article_text(link, timeout=fetch_timeout)
             if content:
                 it["content_text"] = content
                 it["matched_camp_name"] = camp_name
@@ -411,7 +410,6 @@ async def build_snippet_per_doc(
     docs_with_metadata: List[Tuple[Document, float]],
     per_type_display: int = 20,
     fetch_timeout: int = 8,
-    max_chars: int = 2000,
     enforce_name_in_title: bool = True,
     include_when_no_local_modified: bool = True,
 ) -> List[Dict[str, str]]:
@@ -422,7 +420,6 @@ async def build_snippet_per_doc(
         include_when_no_local_modified=include_when_no_local_modified,
         enforce_name_in_title=enforce_name_in_title,
         fetch_timeout=fetch_timeout,
-        max_chars=max_chars,
     )
     # 2) 본문에서 키워드 포함 문장만 추출
     results: List[Dict[str, str]] = []
