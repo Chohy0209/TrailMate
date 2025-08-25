@@ -121,7 +121,7 @@ def extract_keyword_sentences(text: str) -> List[str]:
     if not text: return []
     keywords = r"가격|요금|비용|인원|추가인원|체크인|체크아웃|입실|퇴실|운영시간|영업시간|예약|문의|전화"
     sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if len(s.strip()) > 5]
-    return [s for s in sents if re.search(keywords, s) and (re.search(r"\d", s) or re.search(r"(시|분|원)", s))]
+    return [s for s in sents if re.search(keywords, s)] # and (re.search(r"\d", s) or re.search(r"(시|분|원)", s))
 
 async def build_snippet_per_doc(docs_with_metadata, **kwargs) -> List[Dict[str, str]]:
     picked_items = await fetch_single_best_with_content_per_doc(docs_with_metadata, **kwargs)

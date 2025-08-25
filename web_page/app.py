@@ -88,6 +88,13 @@ async def chat():
         session.clear()
         return jsonify({"answer": "죄송합니다. 처리 중 오류가 발생했습니다.", "locations": []}), 500
 
+@app.route("/clear_session", methods=["POST"])
+async def clear_session():
+    """사용자의 LangGraph 세션을 초기화하는 엔드포인트"""
+    session.clear()
+    print("✅ LangGraph 세션이 초기화되었습니다.")
+    return jsonify({"status": "session_cleared"})
+
 # --- Application Startup ---
 @app.before_serving
 async def initialize_app():

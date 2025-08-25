@@ -135,6 +135,20 @@ const ChatApp = {
         this.clearMap();
         this.elements.mapAndListContainer.style.display = 'none';
         this.stopSpeech();
+
+        // 2. 서버에 세션 초기화를 요청합니다.
+        fetch("/clear_session", {
+            method: "POST"
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'session_cleared') {
+                console.log("서버 세션이 성공적으로 초기화되었습니다.");
+            }
+        })
+        .catch(error => {
+            console.error('서버 세션 초기화 중 오류 발생:', error);
+        });
     },
     scrollToBottom() { this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight; },
     stopSpeech() { if (window.speechSynthesis?.speaking) window.speechSynthesis.cancel(); },
@@ -268,7 +282,9 @@ const ChatApp = {
         }).catch(e => console.error('Weather fetch error:', e));
     },
     formatWeatherForecast(data) {
-        let html = `<h3>${data.city.name} 날씨 예보</h3><div class="weather-forecast-container">`;
+        // ✨ " 날씨 예보" 텍스트를 span 태그로 감싸줍니다.
+        let html = `<h3>${data.city.name}<span class="weather-forecast-label"> 날씨 예보</span></h3><div class="weather-forecast-container">`;
+        
         const daily = {};
         data.list.forEach(item => {
             const day = new Date(item.dt * 1000).toLocaleString('ko-KR', { weekday: 'short' });
@@ -277,10 +293,12 @@ const ChatApp = {
             daily[day].weathers.push(item.weather[0].description);
             daily[day].icons.push(item.weather[0].icon);
         });
+
         for (const day in daily) {
             const d = daily[day];
             const avgTemp = (d.temps.reduce((a, b) => a + b, 0) / d.temps.length).toFixed(1);
             const mostCommon = arr => arr.sort((a,b) => arr.filter(v=>v===a).length - arr.filter(v=>v===b).length).pop();
+            
             html += `<div class="weather-day">
                 <strong class="weather-day-text">${day}</strong>
                 <img src="http://openweathermap.org/img/w/${mostCommon(d.icons)}.png" alt="${mostCommon(d.weathers)}">
@@ -289,7 +307,7 @@ const ChatApp = {
             </div>`;
         }
         return html + `</div>`;
-    }
+    },
 };
 
 // // static/chat_script.js
