@@ -2,6 +2,8 @@
 import os
 from dotenv import load_dotenv
 
+# from naver_api import NAVER_CONCURRENCY
+
 load_dotenv()
 
 # --- API Keys & Secrets ---
@@ -14,6 +16,7 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
+NAVER_CONCURRENCY = 3
 
 # --- Model & RAG Parameters ---
 EMBEDDING_MODEL_NAME = "dragonkue/BGE-m3-ko"
@@ -27,4 +30,4 @@ MAX_TOKENS = 512
 # --- Search Parameters ---
 TOPK_CAMP, TOPK_ATTR, TOPK_SUM = 100, 100, 100
 ROLLUP_LIMIT, FINAL_TOPN = 2, 2
-WEIGHT_CAMP, WEIGHT_ATTR, WEIGHT_SUM = 2.7, 0.3, 0.6
+WEIGHT_CAMP, WEIGHT_ATTR, WEIGHT_SUM = 2, 0.3, 1.2

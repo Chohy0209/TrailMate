@@ -220,7 +220,7 @@ def _rollup_query():
     CALL {
       CALL db.index.vector.queryNodes('camp_embedding_index', $topk_camp, $q) YIELD node, score
       WITH node AS camp, score * $w_camp AS s, 'camp' AS src
-      WHERE camp.type = $camping_type
+      WHERE camp.type = $camping_type and camp.status in ["운영", "정보없음"]
       RETURN camp, s, src
       UNION
       CALL db.index.vector.queryNodes('attr_embedding_index', $topk_attr, $q) YIELD node, score
