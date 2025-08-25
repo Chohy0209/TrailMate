@@ -75,8 +75,8 @@ body {
 }
 
 
-.chat-area { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-.chat-header { display: none; }
+.chat-area { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; height: 100%;}
+.chat-header { display: none; flex-shrink: 0;}
 .messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
 .message { max-width: 85%; padding: 12px 15px; border-radius: 15px; line-height: 1.5; }
 .message p {
@@ -85,7 +85,7 @@ body {
 .message.bot { background-color: var(--bg-tertiary); color: var(--text-primary); align-self: flex-start; border-top-left-radius: 0; }
 .message.user { background-color: var(--accent-color); color: var(--white-color); align-self: flex-end; border-top-right-radius: 0; }
 
-.chat-footer { padding: 15px; border-top: 1px solid var(--border-color); }
+.chat-footer { padding: 15px; border-top: 1px solid var(--border-color); flex-shrink: 0;}
 .chat-input-form { display: flex; gap: 10px; }
 .chat-input-form input { flex-grow: 1; padding: 12px; border-radius: 10px; border: none; background-color: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem; }
 .chat-input-form button { padding: 12px 20px; border-radius: 10px; background-color: var(--accent-color); color: var(--white-color); }
@@ -132,6 +132,8 @@ body {
     color: var(--text-secondary);
     overflow-x: auto; /* 내용이 넘칠 경우 가로 스크롤바 생성 */
     white-space: nowrap; /* 자식 요소들이 한 줄로 나열되도록 설정 */
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* 스크롤바 디자인 (선택 사항) */
@@ -195,11 +197,19 @@ body {
 
 /* --- Mobile Layout (767px 이하) --- */
 @media (max-width: 767px) {
+    /* ✨ h3 태그 숨김 규칙을 삭제하고, 아래의 새로운 규칙들로 대체합니다. */
     #weather-info h3 {
+        font-size: 1rem; /* 모바일에서 지역명 폰트 크기 조정 */
+        text-align: center;
+        margin: 0 0 5px 0; /* 하단 여백 조정 */
+    }
+
+    /* ✨ " 날씨 예보" 텍스트만 숨깁니다. */
+    .weather-forecast-label {
         display: none;
     }
 
-    /* ✨ 모바일에서 아이콘을 제외한 모든 텍스트 숨기기 */
+    /* 아이콘을 제외한 다른 텍스트는 계속 숨김 처리합니다. */
     .weather-day .weather-day-text,
     .weather-day .weather-desc,
     .weather-day .weather-temp {

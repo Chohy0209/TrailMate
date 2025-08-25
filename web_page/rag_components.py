@@ -131,7 +131,7 @@ async def classify_question_type(state: GraphState) -> dict:
         "당신은 캠핑에 대한 질문을 하는지 놀러갈 장소를 추천해달라고 하는 질문을 하는지 분류하는 AI 어시스턴트입니다.\n"
         "다음 질문을 읽고 일반 캠핑에 관한 질문이면 '일반 캠핑' 으로 답하고, 놀러가는 장소에 관한 질문이나 문맥상 장소를 추천해야하는 질문은 '장소 추천'으로 답하세요.\n\n"
         "아래 질문 유형에 대한 예시를 참고해서 분류하세요\n"
-        "일반 캠핑 예시: '요리법','주의사항','캠핑용품','대처법','장비추천'등 일반 캠핑 상식이나 평소 일상 질문.\n"
+        "일반 캠핑 예시: '요리법','주의사항','캠핑용품','대처법','장비추천'등 일반 캠핑 상식이나 '날씨' 등 평소 일상 질문.\n"
         "장소 추천 예시: '가격이 비싸지 않은 곳으로 아이랑 놀러갈거야','강원도근처에 가보려고'등 질문의 의도 속에 장소 추천을 바라는 질문.\n\n"
         "⚠️'일반 캠핑', '장소 추천' 둘 중 하나만 답하세요.\n\n"
         f"질문: {question}\n"
@@ -360,6 +360,9 @@ async def search_camping(state: dict, camping_type: str) -> dict:
             docs_with_metadata = [(loc["doc_for_web"], loc["local_document"]["score"]) for loc in locations]
             try:
                 snippets = await build_snippet_per_doc(docs_with_metadata=docs_with_metadata, per_type_display=20)
+                
+                print(f"[DEBUG] 웹 검색 : {snippets}")
+                
                 snippet_map = {s["장소이름"]: s for s in snippets}
                 for loc in locations:
                     place_name = loc["local_document"]["metadata"].get("캠핑장이름", "")
