@@ -142,11 +142,7 @@ TrailMate/
 
 **발표 자료**
 
-### 시연영상
-<video width="100%" controls>
-  <source src="final/camptory_demo.mp4" type="video/mp4">
-  브라우저가 비디오 태그를 지원하지 않습니다.
-</video>
+**🎬 [시연영상 보기](final/camptory_demo.mp4)**
 
 
 **📄 [전체 포스터 보기](final/camptory_trailmate_poster_0.pdf)**
