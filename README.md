@@ -11,7 +11,7 @@
 ## ✨ 주요 기능
 
 - **🤖 대화형 AI 챗봇**: 자연어 질문을 이해하고 캠핑 관련 정보를 제공합니다.
-- **🔍 RAG (검색 증강 생성)**: 벡터 데이터베이스를 사용하여 질문과 관련된 정확한 캠핑장 정보를 검색하고 답변을 생성합니다.
+- **🔍 GraphRAG (검색 증강 생성)**: GraphDB를 사용하여 질문과 관련된 정확한 캠핑장 정보를 검색하고 답변을 생성합니다.
 - **👍 동적 맞춤 추천**: 사용자의 선호도(유료, 글램핑, 노지 등)를 파악하여 그에 맞는 캠핑 스타일을 추천하는 2단계 대화 흐름을 갖추고 있습니다.
 - **🗺️ 인터랙티브 지도**: 추천된 캠핑장의 위치를 Tmap 지도에 마커로 표시합니다.
 - **🚗 실시간 교통정보 경로**: 사용자의 현재 위치(또는 기본 위치)로부터 추천된 장소까지의 자동차 경로를 실시간 교통정보에 따라 다른 색상으로 시각화합니다.
@@ -28,7 +28,7 @@
   - `HTML`, `CSS`, `JavaScript`
   - `Tmap API v2` (지도 및 경로 시각화)
 - **AI/ML**:
-  - **LLM**: 로컬 모델 (`GPI API 사용`)
+  - **LLM**: `로컬 모델 finetuning` , `GPT-finetuning`
   - **Embedding Model**: `dragonkue/BGE-m3-ko` (RAG를 위한 텍스트 임베딩)
 - **Database**:
   - `GraphRAG` (캠핑장 정보 저장을 위한 벡터 스토어)
@@ -44,7 +44,7 @@ TrailMate/
 ├── web_page/
 │   ├── app.py            # 메인 웹 서버
 │   ├── config.py     
-│   ├── naver_api.py
+│   ├── naver_api.py      # 실시간 정보추출을 위한 네이버 검색 로직
 |   ├── rag_components.py # LangGraph를 이용한 핵심 챗봇 로직
 |   ├── services.py
 |   ├── static/
@@ -52,7 +52,6 @@ TrailMate/
 │   └── templates/
 │       └── index.html    # 메인 프론트엔드 HTML 파일
 └── data/
-    └── camp_chroma_store/  # ChromaDB 벡터 데이터 저장소
 
 ```
 
@@ -140,3 +139,14 @@ TrailMate/
 - `generate_location`: 검색된 정보를 바탕으로 사용자에게 최종 캠핑장 추천 답변을 생성합니다.
 
 이러한 두 가지 워크플로우의 유기적인 연동을 통해 캠토리 챗봇은 사용자의 다양한 질문에 대해 유연하고 정확한 답변을 제공할 수 있습니다.
+
+**발표 자료**
+
+### 시연영상
+<video width="100%" controls>
+  <source src="final/camptory_demo.mp4" type="video/mp4">
+  브라우저가 비디오 태그를 지원하지 않습니다.
+</video>
+
+
+**📄 [전체 포스터 보기](final/camptory_trailmate_poster_0.pdf)**
